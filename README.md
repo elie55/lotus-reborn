@@ -13,3 +13,7 @@ A playable xianxia card battle prototype, playable at https://elie55.github.io/l
 ## Update 3
 
 Qi-gain orb animations (start of turn and effects) and Lin passive text fix.
+
+## Update 4
+
+Touch-first layout (bigger simplified cards, skill tray, tap-to-target), living animated cards, current-HP bars, green/red buff/debuff rings with hold tooltips, Qi Surge +5% damage per link.
