@@ -222,6 +222,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 .card,.sk,.tb,#tray,.slot{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:none}
 #endBtn{transition:transform .2s ease}
 #stage.trayOpen #endBtn{transform:translateY(-36px) scale(.72)}
+
+/* ===== Qi-gain orbs (transform/opacity only) ===== */
+.qorb{position:absolute;left:0;top:0;width:18px;height:18px;border-radius:50%;pointer-events:none;will-change:transform,opacity;z-index:65;
+ background:radial-gradient(circle at 40% 35%,#fff 0,#fff 18%,var(--c2) 45%,var(--c) 80%,rgba(255,255,255,0) 100%);box-shadow:0 0 10px 4px var(--c2),0 0 2px 1px #fff}
+.qorb.bonus{box-shadow:0 0 14px 7px var(--c2),0 0 4px 2px #fff,0 0 22px 10px rgba(255,236,170,.55)}
+.qring{position:absolute;left:0;top:0;width:40px;height:40px;border-radius:50%;pointer-events:none;border:3px solid var(--c2);box-shadow:0 0 10px var(--c2);will-change:transform,opacity}
+.qlbl{position:absolute;left:0;top:0;pointer-events:none;white-space:nowrap;will-change:transform,opacity;font-weight:1000;font-size:13px;color:#fff;padding:2px 9px;border-radius:10px;
+ background:linear-gradient(90deg,var(--c,#888),var(--c2,#bbb));border:1.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);text-shadow:0 1px 2px rgba(0,0,0,.35);z-index:66}
+.qlbl.bonus{font-size:15px;border-color:#ffe08a;box-shadow:0 0 0 1px #c99a3a,0 0 14px rgba(255,220,120,.9)}
+.qlbl.max{background:linear-gradient(90deg,#6b7290,#9aa1bd);border-color:#fff;font-size:12px;letter-spacing:1px}
+.qi .qv{display:inline-block}
 </style></head><body><div id="backdrop"></div>
 <div id="stage">
   <div class="rays"></div><div class="vign"></div>
@@ -349,7 +360,7 @@ const dotH=e=>`<span class="dot" style="--c:${EL[e].c}"></span>`;
  PvP rule: the team that moves second gets +1 Qi on its first turn (offsets first-move advantage). */
 const KITS={
  lin:{name:'Lin Qinglian',role:'Healer · Shielder',el:'water',hp:3150,
-  passive:{name:'Lotus Heart',desc:'At the start of your turn, heals the ally with the lowest HP % for 120.'},
+  passive:{name:'Lotus Heart',desc:'At the start of your turn, heals the ally with the lowest HP % for 160.'},
   skills:[
    {name:'Lotus Ward',tier:1,tg:'ally',sh:290,fx:'cast',desc:'Shields one ally. Shields absorb damage and fade at the start of your next turn.'},
    {name:'Healing Melody',tier:2,tg:'ally',heal:420,cleanse:1,fx:'cast',desc:'Heals one ally and removes its Burn.'},
@@ -397,6 +408,8 @@ const CULT={
 };
 /* PvE encounter tuning: the smarter cult AI (picks skill+target when it acts) wastes far less damage than the old fixed rotation, so this encounter's cult damage is scaled to keep the fight fair. */
 const CULT_DMG=+(new URLSearchParams(location.search).get('cdmg')||0.85);
+/* Qi-gain orb state (declared early: the boot code in game4 runs before game5 loads) */
+const QIF={};let qiNext=0,qiQueued=0;const qiOrbPool=[],qiLblPool=[];
 let UID=0;
 function mkUnit(kitId,side,cult){
  const K=cult?CULT[kitId]:KITS[kitId];
@@ -432,7 +445,10 @@ function canAfford(u,k){const c=cost(k),q=SD(u).qi;return q[u.el]>=c.own&&qiTota
 function canUse(u,i){const k=u.skills[i];return !u.dead&&!u.acted&&!u.cult&&u.cdl[i]===0&&canAfford(u,k);}
 function whyNot(u,i){const k=u.skills[i];if(u.dead)return'Knocked out.';if(u.acted)return u.skip?'Stunned: cannot act this turn.':'Already acted this turn.';if(u.cdl[i]>0)return`On cooldown: ${u.cdl[i]} more turn${u.cdl[i]>1?'s':''}.`;if(!canAfford(u,k))return'Not enough Qi.';return'';}
 function pay(u,k){const c=cost(k),q=SD(u).qi;q[u.el]-=c.own;for(let i=0;i<c.any;i++){const o=FIVE.filter(e=>e!==u.el&&q[e]>0).sort((a,b)=>q[b]-q[a])[0]||u.el;q[o]--;}renderQi();}
-function gainQi(side,e,n){const q=S.sides[side].qi;let g=0;for(let i=0;i<n;i++){if(qiTotal(side)>=10)break;q[e]++;g++;}renderQi(side==='p'?e:null);return g;}
+/* gainQi(side, element, n, src, bonus): src = unit or 'surge'. The logical Qi is added at once (rules stay exact);
+   for the player the COUNTER only ticks up when the flying orb lands (see qiFly in game5). */
+function gainQi(side,e,n,src,bonus){const q=S.sides[side].qi;let g=0;for(let i=0;i<n;i++){if(qiTotal(side)>=10)break;q[e]++;g++;}
+ if(side==='p'&&!NOFX&&src){qiFly(e,g,n-g,src,!!bonus);}else renderQi(side==='p'&&g?e:null);return g;}
 
 /* ===== damage model (deterministic, so previews are exact) ===== */
 function calc(src,t,base,el,single){
@@ -470,7 +486,7 @@ async function runSkill(u,k,t){
  const ts=targetsOf(u,k,t).filter(x=>!x.dead);
  const hitsFoes=!!k.d||!!k.burn&&!k.heal;
  // wildfire check (before burns are applied)
- if(u.id==='su'&&!u.cult&&k.d&&!SD(u).wildUsed&&ts.some(x=>x.side!==u.side&&x.burn>0)){SD(u).wildUsed=true;if(gainQi(u.side,'fire',1)){SD(u).st.qi+=1;popup(u,'WILDFIRE +1 Fire Qi','weak',-50);}}
+ if(u.id==='su'&&!u.cult&&k.d&&!SD(u).wildUsed&&ts.some(x=>x.side!==u.side&&x.burn>0)){SD(u).wildUsed=true;if(gainQi(u.side,'fire',1,u,true)){SD(u).st.qi+=1;}}
  // animation
  if(!NOFX&&VFX[k.name]){await VFX[k.name](u,ts,k);for(const x of ts)await applyOn(u,k,x,ts.length>1);}
  else if(hitsFoes){
@@ -495,7 +511,7 @@ async function applyOn(u,k,x,multi){
  if(k.heal){heal(u,x,k.heal);if(k.cleanse&&x.burn){x.burn=0;st.ctrl+=75;popup(x,'CLEANSED','heal',30);}}
  if(k.sh)addShield(u,x,k.sh);
  if(k.emp){x.emp=true;upd(x);popup(x,'EMPOWERED','info');}
- if(k.qiGen){const g=gainQi(u.side,x.el,k.qiGen);if(g){st.qi+=g;const c=center(x);ring(c.x,c.y,EL[x.el].c);popup(x,`+${g} ${EL[x.el].n} Qi`,'weak');}else popup(x,'Qi FULL (10)','info');}
+ if(k.qiGen){const g=gainQi(u.side,x.el,k.qiGen,x,true);if(g){st.qi+=g;const c=center(x);ring(c.x,c.y,EL[x.el].c);}else if(NOFX||u.side!=='p')popup(x,'Qi FULL (10)','info');}
 }
 function tryStun(u,x){if(x.resolute>0||x.skip){popup(x,'RESISTED (Resolute)','info',30);return;}if(!x.stun){x.stun=true;SD(u).st.ctrl+=390;}upd(x);popup(x,x.cult?'STUNNED':'STUNNED','info',30);}
 async function hit(src,t,base,el,o={}){
@@ -564,9 +580,9 @@ async function sideStart(side){
   const lin=units(side).find(u=>u.id==='lin');
   if(lin&&!lin.dead){const l=lowestPct(side);if(l&&l.hp<l.maxHp){heal(lin,l,160);await sleep(250);}}
   const xiao=units(side).find(u=>u.id==='xiao');const low=qiTotal(side)<=2;
-  for(const u of alive(side))gainQi(side,u.el,1);
-  if(xiao&&!xiao.dead&&low){if(gainQi(side,'wood',1))popup(xiao,'QI CIRCULATION +1','weak',-50);}
-  let b=0;for(const[e,v]of Object.entries(sd.pending))b+=gainQi(side,e,v);
+  for(const u of alive(side))gainQi(side,u.el,1,u,false);
+  if(xiao&&!xiao.dead&&low){gainQi(side,'wood',1,xiao,true);}
+  let b=0;for(const[e,v]of Object.entries(sd.pending))b+=gainQi(side,e,v,'surge',true);
   if(MIRROR&&side==='e'&&S.turn===1){gainQi(side,'metal',1);}
   if(b&&side==='p'){banner(`QI SURGE BONUS +${b} QI`,'surge',900);await sleep(400);}
  }
@@ -773,8 +789,8 @@ function renderQi(bump){
  const b=$('#qibar');
  if(!b.children.length){b.innerHTML=FIVE.map(e=>`<div class="qi glass" id="qi-${e}" data-tip="qi" data-e="${e}"><div class="orb" style="--c:${EL[e].c};--c2:${EL[e].c2};--c3:${EL[e].c3}"><svg viewBox="0 0 24 24">${SVG[e]}</svg></div><div><div class="qn">${EL[e].n}</div><div class="qv">0</div></div></div>`).join('')+`<div class="qi glass total" data-tip="qi" data-e="total"><div><div class="qn">QI STORED</div><div class="qv" id="qiT">0/10</div></div></div>`;}
  const q=S.sides.p.qi;
- for(const e of FIVE){const d=$('#qi-'+e);d.querySelector('.qv').textContent=q[e];d.classList.toggle('has',q[e]>0);}
- $('#qiT').textContent=qiTotal('p')+'/10';
+ let tot=0;for(const e of FIVE){const v=Math.max(0,q[e]-(QIF[e]||0));tot+=v;const d=$('#qi-'+e);d.querySelector('.qv').textContent=v;d.classList.toggle('has',v>0);}
+ $('#qiT').textContent=tot+'/10';
  if(bump&&FIVE.includes(bump)){const d=$('#qi-'+bump);d.classList.remove('bump');void d.offsetWidth;d.classList.add('bump');}
  if(MIRROR){const r=$('#rivalQi');r.style.display='block';const rq=S.sides.e.qi;r.innerHTML='Rival Qi: '+FIVE.filter(e=>rq[e]).map(e=>`${EL[e].n} ${rq[e]}`).join(' · ')+` (${qiTotal('e')}/10)`;}
 }
@@ -1078,7 +1094,7 @@ function fit(){const s=Math.min(innerWidth/W,innerHeight/H);SCALE=s;$('#stage').
 let lastWH=[innerWidth,innerHeight];addEventListener('resize',()=>{fit();if(S)renderTray();const big=Math.abs(innerWidth-lastWH[0])>2||Math.abs(innerHeight-lastWH[1])>120;lastWH=[innerWidth,innerHeight];if(big)hideTip();});
 function start(){
  $('#endOv').classList.remove('show');$('#fxl').innerHTML='';parts=[];strokes=[];hideTip();
- S=newState();buildCards();renderQi();renderSurge();renderHint();log('The Shadow Moon Cult attacks the ruins of the Azure Lotus Sect!');
+ S=newState();qiReset();buildCards();renderQi();renderSurge();renderHint();log('The Shadow Moon Cult attacks the ruins of the Azure Lotus Sect!');
  nextRound();
 }
 $('#endBtn').onclick=()=>{if(!S.over)endTurn();};
@@ -1217,4 +1233,37 @@ const VFX={
  'Howl of Night':async(u,ts)=>{const a=center(u);quake(5,500);await fxRun2(900,tt=>{for(let r=0;r<3;r++){const q=Math.max(0,tt-r*.15);cx.globalAlpha=(1-q)*.7;cx.strokeStyle='#b07cff';cx.shadowColor='#7a3cd0';cx.shadowBlur=18;cx.lineWidth=5;cx.beginPath();cx.arc(a.x,a.y-40,30+q*300,-Math.PI*.95,-Math.PI*.05);cx.stroke();}for(const t of ts){const b=topOf(t);crescent(b.x,b.y+30,22,-.4,'rgba(210,170,255,.9)',Math.sin(tt*3.14));}});},
 };
 function wisp(p,tt){cx.globalAlpha=1;const g=cx.createRadialGradient(p.x,p.y,0,p.x,p.y,16);g.addColorStop(0,'#fff6d8');g.addColorStop(.35,'#ffb347');g.addColorStop(1,'rgba(255,60,30,0)');cx.fillStyle=g;cx.beginPath();cx.arc(p.x,p.y,16,0,7);cx.fill();trailDot(p,'#ff8a3a',2.5);}
+
+/* ===== Qi-gain orbs: pooled DOM nodes, transform/opacity-only WAAPI (no per-frame JS, no layout per frame) ===== */
+function qiReset(){for(const k in QIF)QIF[k]=0;qiNext=0;qiQueued=0;}
+const qdur=ms=>dur(ms)*(AUTO&&SPEED===1?.5:1);   // 2x speed or AUTO: half the time
+function stageXY(el){const r=el.getBoundingClientRect(),sr=$('#stage').getBoundingClientRect();return{x:(r.left+r.width/2-sr.left)/SCALE,y:(r.top+r.height/2-sr.top)/SCALE};}
+function qiNode(pool,cls){const d=pool.pop()||document.createElement('div');d.className=cls;$('#fxl').appendChild(d);return d;}
+function qiFly(e,g,lost,src,bonus){
+ const from=src==='surge'?stageXY($('#surge')):center(src);const from2={x:from.x,y:src==='surge'?from.y:from.y-30};
+ const ctr=$('#qi-'+e),to=stageXY(ctr.querySelector('.orb'));
+ const now=performance.now();if(qiNext<now){qiNext=now;qiQueued=0;}
+ if(g>0||lost>0)qiLabel(from2,g>0?`+${g} ${EL[e].n} Qi`:'MAX 10',e,bonus,g===0,Math.max(0,qiNext-now));
+ for(let i=0;i<g;i++){QIF[e]=(QIF[e]||0)+1;const delay=Math.max(0,qiNext-now);const stag=qiQueued<4?90:50;qiNext+=qdur(stag);qiQueued++;
+  setTimeout(()=>qiOrb(from2,to,e,bonus,ctr),delay);}
+ for(let i=0;i<lost;i++){const delay=Math.max(0,qiNext-now)+i*qdur(80);setTimeout(()=>qiMax(ctr,e),delay);}
+ renderQi();}
+function qiOrb(a,b,e,bonus,ctr){
+ const d=qiNode(qiOrbPool,'qorb'+(bonus?' bonus':''));d.style.setProperty('--c',EL[e].c);d.style.setProperty('--c2',EL[e].c2);
+ const c={x:(a.x+b.x)/2+(b.x>a.x?-40:40),y:Math.min(a.y,b.y)-70-(bonus?30:0)};const s0=bonus?1.35:1;const kf=[];
+ for(let i=0;i<=8;i++){const t=i/8,p=qb(a,c,b,t);const sc=(t<.15?lerp(.3,s0*1.15,t/.15):lerp(s0*1.15,s0*.7,(t-.15)/.85));kf.push({transform:`translate(${p.x-9}px,${p.y-9}px) scale(${sc.toFixed(3)})`,opacity:t<.1?t*10:1});}
+ const D=qdur(bonus?440:400);
+ d.animate(kf,{duration:D,easing:'cubic-bezier(.45,.05,.55,1)'}).onfinish=()=>{d.remove();if(qiOrbPool.length<24)qiOrbPool.push(d);qiLand(ctr,e,bonus);};}
+function qiLand(ctr,e,bonus){QIF[e]=Math.max(0,(QIF[e]||0)-1);renderQi();if(!S||NOFX)return;
+ const o=ctr.querySelector('.orb');o.animate([{transform:'scale(1)'},{transform:`scale(${bonus?1.32:1.22})`},{transform:'scale(1)'}],{duration:qdur(260),easing:'ease-out'});
+ ctr.querySelector('.qv').animate([{transform:'translateY(0) scale(1)'},{transform:'translateY(-4px) scale(1.25)'},{transform:'translateY(0) scale(1)'}],{duration:qdur(260)});
+ const r=qiNode(qiOrbPool,'qring');r.style.setProperty('--c2',EL[e].c2);const p=stageXY(o);
+ r.animate([{transform:`translate(${p.x-20}px,${p.y-20}px) scale(.5)`,opacity:.95},{transform:`translate(${p.x-20}px,${p.y-20}px) scale(1.5)`,opacity:0}],{duration:qdur(330),easing:'ease-out'}).onfinish=()=>{r.remove();if(qiOrbPool.length<24)qiOrbPool.push(r);};}
+function qiMax(ctr,e){if(!S)return;const p=stageXY(ctr.querySelector('.orb'));const d=qiNode(qiLblPool,'qlbl max');d.textContent='MAX';
+ d.animate([{transform:`translate(${p.x}px,${p.y-14}px) translate(-50%,-50%) scale(.6)`,opacity:0},{transform:`translate(${p.x}px,${p.y-26}px) translate(-50%,-50%) scale(1.1)`,opacity:1,offset:.3},{transform:`translate(${p.x}px,${p.y-40}px) translate(-50%,-50%) scale(.9)`,opacity:0}],{duration:qdur(650)}).onfinish=()=>{d.remove();if(qiLblPool.length<12)qiLblPool.push(d);};
+ const q=$('#qiT').parentNode.parentNode;q.animate([{transform:'translateX(0)'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}],{duration:qdur(240)});}
+function qiLabel(p,txt,e,bonus,isMax,delay){
+ if(!bonus&&!isMax)return; // start-of-turn generation: orbs only (keeps it clean); bonus sources get a label
+ setTimeout(()=>{if(!S)return;const d=qiNode(qiLblPool,'qlbl'+(bonus?' bonus':'')+(isMax?' max':''));d.textContent=txt;d.style.setProperty('--c',EL[e].c);d.style.setProperty('--c2',EL[e].c2);
+  d.animate([{transform:`translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(.6)`,opacity:0},{transform:`translate(${p.x}px,${p.y-16}px) translate(-50%,-50%) scale(1.08)`,opacity:1,offset:.2},{transform:`translate(${p.x}px,${p.y-26}px) translate(-50%,-50%) scale(1)`,opacity:1,offset:.7},{transform:`translate(${p.x}px,${p.y-40}px) translate(-50%,-50%) scale(.95)`,opacity:0}],{duration:qdur(850),easing:'ease-out'}).onfinish=()=>{d.remove();if(qiLblPool.length<12)qiLblPool.push(d);};},delay);}
 </script></body></html>

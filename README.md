@@ -9,3 +9,7 @@ A playable xianxia card battle prototype, playable at https://elie55.github.io/l
 - Enemies no longer show targets and choose smartly when acting.
 - Long-press tooltips and a big skill panel on touch devices.
 - Performance optimizations.
+
+## Update 3
+
+Qi-gain orb animations (start of turn and effects) and Lin passive text fix.
