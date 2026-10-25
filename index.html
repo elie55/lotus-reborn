@@ -15,7 +15,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 #fxc{position:absolute;inset:0;width:1120px;height:630px;pointer-events:none;z-index:50}
 #fxl{position:absolute;inset:0;pointer-events:none;z-index:60}
 #aim{position:absolute;inset:0;width:1120px;height:630px;pointer-events:none;z-index:70;overflow:visible}
-.glass{background:linear-gradient(160deg,rgba(255,255,255,.82),rgba(255,255,255,.55));border:1px solid rgba(255,255,255,.95);box-shadow:0 6px 18px rgba(60,90,160,.2),inset 0 1px 0 #fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.glass{background:linear-gradient(160deg,rgba(255,255,255,.82),rgba(255,255,255,.55));border:1px solid rgba(255,255,255,.95);box-shadow:0 6px 18px rgba(60,90,160,.2),inset 0 1px 0 #fff;}
+/* PERF: no backdrop-filter on HUD glass (it re-blurred every frame because the petal layer animates underneath); slightly more opaque instead */
+.glass{background:linear-gradient(160deg,rgba(255,255,255,.9),rgba(255,255,255,.7))}
 /* header */
 #top{position:absolute;left:0;right:0;top:0;height:48px;z-index:20}
 .pill{position:absolute;top:9px;height:30px;border-radius:15px;padding:0 13px;display:flex;align-items:center;gap:6px;font-weight:900;font-size:12.5px;color:#3a4266;cursor:pointer;letter-spacing:.6px}
@@ -37,13 +39,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 .slot.sel{transform:translateY(-10px);z-index:8}
 @media (hover:hover){.slot:not(.isdead):hover{transform:translateY(-5px)}.slot.sel:hover{transform:translateY(-10px)}}
 .card{position:absolute;inset:0;border-radius:15px;padding:3px;cursor:pointer}
-.frame{position:absolute;inset:0;border-radius:15px;background:conic-gradient(from var(--a),#ffd3ec,#bfe8ff,#fff0b5,#d8c6ff,#b8ffe1,#ffe0b0,#ffd3ec);animation:spinA 6s linear infinite;box-shadow:0 0 0 1px rgba(255,255,255,.95),0 10px 20px rgba(40,60,130,.35),0 0 16px rgba(255,214,130,.6)}
-.card.enemy .frame{background:conic-gradient(from var(--a),#e6c9ff,#ffc7e2,#f6eeff,#c4b8ff,#ffcdea,#e6c9ff);box-shadow:0 0 0 1px rgba(255,255,255,.95),0 10px 20px rgba(60,30,110,.38),0 0 16px rgba(200,140,255,.6)}
-@keyframes spinA{to{--a:360deg}}
+.frame{position:absolute;inset:0;border-radius:15px;overflow:hidden;background:#fff0f8;isolation:isolate;box-shadow:0 0 0 1px rgba(255,255,255,.95),0 10px 20px rgba(40,60,130,.35),0 0 16px rgba(255,214,130,.6)}
+.card.enemy .frame{background:#f3e8ff;box-shadow:0 0 0 1px rgba(255,255,255,.95),0 10px 20px rgba(60,30,110,.38),0 0 16px rgba(200,140,255,.6)}
+/* PERF: the holographic frame used to animate a CSS custom property (full repaint of 8 cards every frame); now a conic layer rotates with transform */
+.frame::before{content:"";position:absolute;left:50%;top:50%;width:330px;height:330px;margin:-165px 0 0 -165px;background:conic-gradient(#ffd3ec,#bfe8ff,#fff0b5,#d8c6ff,#b8ffe1,#ffe0b0,#ffd3ec);animation:spin 6s linear infinite;will-change:transform}
+.card.enemy .frame::before{background:conic-gradient(#e6c9ff,#ffc7e2,#f6eeff,#c4b8ff,#ffcdea,#e6c9ff)}
 .inner{position:relative;height:100%;border-radius:12px;overflow:hidden;background:#dfe8ff center 10%/cover no-repeat;box-shadow:inset 0 0 18px rgba(0,0,0,.28)}
 .inner::after{content:"";position:absolute;inset:3px;border-radius:10px;border:1px solid rgba(255,226,150,.75);pointer-events:none;z-index:6}
-.sheen{position:absolute;inset:0;z-index:5;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.38) 47%,rgba(255,255,255,0) 58%);background-size:260% 100%;background-position:120% 0;animation:sheen 7s ease-in-out infinite}
-@keyframes sheen{0%,70%{background-position:130% 0}100%{background-position:-40% 0}}
+.sheen{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.sheen::before{content:"";position:absolute;top:0;bottom:0;left:0;width:260%;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.38) 47%,rgba(255,255,255,0) 58%);animation:sheen 7s ease-in-out infinite;will-change:transform}
+@keyframes sheen{0%,70%{transform:translateX(-80%)}100%{transform:translateX(24.6%)}}
+.hitfl{position:absolute;inset:0;z-index:4;background:#fff;opacity:0;pointer-events:none;mix-blend-mode:normal}
+.fxglow{position:absolute;inset:0;border-radius:15px;z-index:9;pointer-events:none;opacity:0;--gc:#fff;box-shadow:0 0 16px 5px var(--gc),inset 0 0 22px 4px var(--gc);background:rgba(255,255,255,.2)}
+.tglow{position:absolute;inset:0;border-radius:15px;pointer-events:none;opacity:0;box-shadow:0 0 0 2px #fff,0 0 26px 9px rgba(255,80,130,.95)}
+.card.target .tglow{animation:tpulse 1s ease-in-out infinite}
+.card.target.ally .tglow{box-shadow:0 0 0 2px #fff,0 0 26px 9px rgba(60,220,160,.95)}
+@keyframes tpulse{50%{opacity:1}}
 .shade{position:absolute;left:0;right:0;bottom:86px;height:70px;background:linear-gradient(180deg,rgba(20,20,50,0),rgba(20,20,50,.72));z-index:1}
 .jewel{position:absolute;left:7px;top:7px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 0 2px #fff6d2,0 0 0 3.5px #c99a3a,0 3px 8px rgba(0,0,0,.4),0 0 12px var(--g)}
 .jewel::after{content:"";position:absolute;left:5px;top:3px;width:12px;height:7px;border-radius:50%;background:rgba(255,255,255,.75);filter:blur(.5px)}
@@ -63,7 +74,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 .chainBadge{position:absolute;left:50%;top:98px;transform:translateX(-50%);z-index:4;background:linear-gradient(135deg,#fff6c7,#ffd0ea);color:#a0400f;font-weight:900;font-size:10px;padding:2px 8px;border-radius:10px;box-shadow:0 0 12px #ffd27a;display:none;white-space:nowrap;border:1px solid #fff}
 .card.chain .chainBadge{display:block;animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{transform:translateX(-50%) scale(1.08)}}
-.strip{position:absolute;left:3px;right:3px;bottom:3px;height:84px;z-index:3;border-radius:0 0 10px 10px;background:linear-gradient(180deg,rgba(255,255,255,.80),rgba(242,246,255,.92));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(255,255,255,.95);padding:4px 5px 0}
+.strip{position:absolute;left:3px;right:3px;bottom:3px;height:84px;z-index:3;border-radius:0 0 10px 10px;background:linear-gradient(180deg,rgba(255,255,255,.80),rgba(242,246,255,.92));border-top:1px solid rgba(255,255,255,.95);padding:4px 5px 0}
 .sk{height:17.5px;display:flex;align-items:center;gap:3px;font-size:10.5px;font-weight:800;color:#353d68;border-radius:6px;padding:0 3px;letter-spacing:-.1px}
 .sk .cost{display:flex;gap:1px;width:26px;flex:none}
 .dot{width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.95),0 0 3px rgba(0,0,0,.35);background:radial-gradient(circle at 35% 30%,#fff,var(--c) 55%)}
@@ -90,15 +101,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 .pv.show{display:block}
 .pv.dm{background:linear-gradient(90deg,#ff4f6e,#d42c78)}.pv.hl{background:linear-gradient(90deg,#2fcf86,#1a9e68)}.pv.sh{background:linear-gradient(90deg,#4aa3ff,#2a74d8)}.pv.qi{background:linear-gradient(90deg,#f5b234,#e07f12)}.pv.inc{background:linear-gradient(90deg,#7b3fc8,#b0368a);font-size:10px;bottom:auto;top:44px;left:7px;top:44px;transform:none;pointer-events:auto}.pv.dg{background:#3fb9cf}
 .pv.hot{transform:translateX(-50%) scale(1.2)}
-.card.player.acted .inner{filter:saturate(.5) brightness(.9)}
+.card.player.acted .inner{filter:grayscale(.85) brightness(.82)}
+.card.player.acted .strip{opacity:.75}
 .actedTag{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;font-size:10px;font-weight:900;background:rgba(255,255,255,.92);color:#556;padding:2px 9px;border-radius:9px;display:none;letter-spacing:1px}
-.card.acted .actedTag{display:block}
+.card.acted .actedTag{display:none}
 .slot.sel .frame{box-shadow:0 0 0 2px #fff,0 0 26px 8px rgba(255,205,110,.95),0 10px 22px rgba(40,60,130,.35)}
-.card.target .frame{animation:spinA 6s linear infinite,tglow 1s ease-in-out infinite}
-@keyframes tglow{50%{box-shadow:0 0 0 2px #fff,0 0 26px 9px rgba(255,80,130,.95)}}
-.card.target.ally .frame{animation:spinA 6s linear infinite,tglow2 1s ease-in-out infinite}
-@keyframes tglow2{50%{box-shadow:0 0 0 2px #fff,0 0 26px 9px rgba(60,220,160,.95)}}
 .card.hot .frame{box-shadow:0 0 0 3px #fff,0 0 30px 12px rgba(255,220,120,1)!important}
+.card.hot.ally .frame{box-shadow:0 0 0 3px #fff,0 0 30px 12px rgba(60,230,160,1)!important}
 .card.dead{cursor:default;opacity:.6}
 .card.dead .inner{filter:grayscale(1) brightness(.7) contrast(.9)!important}
 .koTag{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) rotate(-8deg);z-index:8;font-family:"Cinzel",serif;font-weight:900;font-size:32px;color:#fff;letter-spacing:3px;text-shadow:0 0 10px #000,0 0 3px #000;display:none}
@@ -122,8 +131,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 #endBtn .tx{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-family:"Cinzel",serif;font-weight:900;font-size:25px;line-height:1.05;letter-spacing:2px;color:#17584f;text-shadow:0 1px 0 #fff,0 0 10px rgba(255,255,255,.9)}
 @keyframes spin{to{transform:rotate(360deg)}}
 #endBtn.dis{filter:grayscale(.85) brightness(.95);opacity:.7;cursor:default}
-#endBtn.ready .ring{animation:breathe 1.6s ease-in-out infinite}
-@keyframes breathe{50%{box-shadow:0 0 40px 16px rgba(255,190,220,.95),0 6px 18px rgba(80,90,150,.35)}}
+#endBtn .ring::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 40px 16px rgba(255,190,220,.95);opacity:0}
+#endBtn.ready .ring::after{animation:tpulse 1.6s ease-in-out infinite}
 #hintBox{position:absolute;left:830px;top:430px;width:254px;border-radius:16px;padding:9px 12px;z-index:10;font-size:12px;font-weight:800;color:#3d4670;line-height:1.35;min-height:62px}
 #hintBox b{color:#b0477a}
 #log{position:absolute;left:830px;top:520px;width:254px;height:58px;border-radius:14px;z-index:10;font-size:11px;font-weight:700;color:#4a5380;padding:6px 11px;line-height:1.3;overflow:hidden;display:flex;align-items:center}
@@ -195,6 +204,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 @media (orientation:portrait) and (max-width:700px){#rotate{display:flex}}
 #aimPath{stroke-dasharray:14 10}
 .pop.big{font-size:44px!important;-webkit-text-stroke-width:2px}
+
+#cards{position:absolute;left:0;top:0;width:0;height:0;z-index:5;will-change:transform}
+/* ===== touch skill tray ===== */
+#tray{position:absolute;left:830px;bottom:4px;width:254px;border-radius:16px;padding:6px;z-index:25;display:none;flex-direction:column;gap:4px;touch-action:none}
+#tray.show{display:flex}
+#stage.trayOpen #hintBox,#stage.trayOpen #log{visibility:hidden}
+#tray .trh{font-family:"Cinzel",serif;font-size:12px;font-weight:900;color:#7a4aa8;letter-spacing:1px;text-align:center;line-height:1.1}
+#tray .tb{height:var(--bh,56px);display:flex;align-items:center;gap:6px;padding:0 10px;border-radius:12px;background:linear-gradient(180deg,#ffffff,#eef3ff);border:1.5px solid #fff;box-shadow:0 2px 6px rgba(60,80,150,.25);font-weight:900;font-size:15px;color:#2f3760;cursor:pointer}
+#tray .tb .cost{display:flex;gap:2px}#tray .tb .tn{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#tray .tb .tv{font-size:13px;color:#b0477a}
+#tray .tb .tv .all{font-size:9px;font-style:normal;margin-left:2px;color:#7a4aa8}
+#tray .tb.no{opacity:.45;filter:grayscale(.6)}
+#tray .tb.pick{background:linear-gradient(135deg,#fff1b8,#c9ffe6);box-shadow:0 0 0 2px #fff,0 0 14px rgba(60,220,160,.8)}
+#tray .tb .cd{color:#8890b0}
+/* bigger invisible hit areas for the top controls (44px+ on phones) */
+.pill::after{content:"";position:absolute;left:-3px;right:-3px;top:-14px;bottom:-12px}
+.card,.sk,.tb,#tray,.slot{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:none}
+#endBtn{transition:transform .2s ease}
+#stage.trayOpen #endBtn{transform:translateY(-36px) scale(.72)}
 </style></head><body><div id="backdrop"></div>
 <div id="stage">
   <div class="rays"></div><div class="vign"></div>
@@ -214,14 +241,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
     <div class="dm" style="left:79px;top:-6px"></div><div class="dm" style="left:79px;bottom:-6px"></div><div class="dm" style="left:-6px;top:79px"></div><div class="dm" style="right:-6px;top:79px"></div>
     <div class="tx">END<br>TURN</div></div>
   <div id="hintBox" class="glass"></div>
+  <div id="tray" class="glass"></div>
   <div id="qibar"></div>
   <div id="log" class="glass"></div>
   <canvas id="fxc" width="1120" height="630"></canvas>
   <svg id="aim" viewBox="0 0 1120 630"><defs>
     <linearGradient id="gAtk" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd0e4"/><stop offset="1" stop-color="#ff3d7f"/></linearGradient>
-    <linearGradient id="gAlly" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9ffe6"/><stop offset="1" stop-color="#ffd46b"/></linearGradient>
+    <linearGradient id="gAlly" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2fff0"/><stop offset="1" stop-color="#16b877"/></linearGradient>
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  </defs><g id="aimG" style="display:none" filter="url(#glow)">
+  </defs><g id="aimG" style="display:none">
+    <path id="aimHalo" fill="none" stroke-width="24" stroke-linecap="round" opacity=".16"/>
     <path id="aimBase" fill="none" stroke-width="12" stroke-linecap="round" opacity=".35"/>
     <path id="aimPath" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="14 10"/>
     <path id="aimCore" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".9"/>
@@ -315,7 +344,8 @@ const dotH=e=>`<span class="dot" style="--c:${EL[e].c}"></span>`;
  Finishers (3 Qi) get a 10% bonus (3.3 Qi of value) and a 1-turn cooldown.
  Area skills give each target 30% of the single-target value (1.2x total vs 4 targets).
  Riders: Seal 0.5 Qi, Stun 1.3 Qi, Dodge 0.25 Qi, Cleanse 0.25 Qi. Burn counts as damage.
- Cult (PvE only, tuned per encounter, X=520 for this fight): normal 1.5 Qi, heavy telegraphed 2.5 Qi, area 2.0 Qi at 35%/target, 2 targets 60% each.
+ Cult (PvE only, tuned per encounter, X=520 for this fight): normal 1.5 Qi, heavy 2.5 Qi, area 2.0 Qi at 35%/target, 2 targets 60% each.
+ Cult energy: each cultist gains 1 Shadow energy per turn (cap 4, starts at 0). Basic skills cost 0; others cost 'en'. The AI picks skill+target at the moment it acts (no announced intent).
  PvP rule: the team that moves second gets +1 Qi on its first turn (offsets first-move advantage). */
 const KITS={
  lin:{name:'Lin Qinglian',role:'Healer · Shielder',el:'water',hp:3150,
@@ -340,36 +370,38 @@ const KITS={
   passive:{name:'Qi Circulation',desc:'At the start of your turn, if your team has 2 Qi or less stored, gain +1 Wood Qi.'},
   skills:[
    {name:'Talisman Seal',tier:1,tg:'foe',d:180,seal:1,fx:'shoot',desc:'Light damage and Seal: the enemy\'s next attack deals 40% less. Sealed enemies can be stunned by Thunder Charm.'},
-   {name:'Spirit Font',tier:2,cd:2,tg:'allAllies',qiGen:2,fx:'cast',desc:'Converts Wood into the Qi your team needs: +1 Qi to the 2 other allies with the least of their own element stored.'},
+   {name:'Spirit Font',tier:2,cd:2,tg:'ally',noSelf:1,qiGen:2,fx:'cast',desc:'Converts Wood into the Qi an ally needs: the chosen ally (not Xiao Yu) gains +2 Qi of its own element.'},
    {name:'Thunder Charm',tier:3,cd:1,tg:'foe',d:900,thunder:1,fx:'bolt',desc:'Lightning on one enemy. If it is Sealed: the seal breaks and it is Stunned (unless Resolute). Otherwise it becomes Sealed.'}]},
 };
 const CULT={
  assassin:{name:'Moon Assassin',role:'Shadow Moon Cult · Killer',els:['shadow','wood'],hp:1650,rot:[0,1,0,2],
   passive:{name:'Moon Veil',desc:'A cult killer who strikes the weakest disciple. Her true nature is hidden in the shadows.'},note:'',
-  skills:[{name:'Shadow Strike',d:780,ic:'atk',pick:'lowest',fx:'lunge',desc:'Hits the ally with the lowest HP.'},
-   {name:'Moon Blur',d:620,dodgeSelf:1,ic:'atk',pick:'random',fx:'lunge',desc:'Hits a random ally, then gains Dodge.'},
-   {name:'Assassinate',d:1250,ic:'atk',pick:'lowest',fx:'lungeBig',desc:'Telegraphed heavy strike on the ally with the lowest HP.'}]},
+  skills:[{name:'Shadow Strike',d:780,ic:'atk',pick:'one',en:0,fx:'lunge',desc:'Strikes one disciple.'},
+   {name:'Moon Blur',d:620,dodgeSelf:1,ic:'atk',pick:'one',en:1,fx:'lunge',desc:'Strikes one disciple, then gains Dodge.'},
+   {name:'Assassinate',d:1250,ic:'atk',pick:'one',en:3,fx:'lungeBig',desc:'Heavy killing strike on one disciple.'}]},
  yue:{name:'Cult Elder Yue',role:'Shadow Moon Cult · Elder',els:['shadow','metal'],hp:2250,rot:[0,1,2],
   passive:{name:'Silver Moon',desc:'A Shadow Moon elder who shields his followers. The source of his power is unknown.'},note:'',
-  skills:[{name:"Elder's Grasp",d:780,ic:'atk',pick:'highest',fx:'shoot',desc:'Hits the ally with the highest HP.'},
-   {name:'Soul Rend',d:370,ic:'aoe',pick:'all',fx:'shoot',desc:'Hits ALL allies.'},
-   {name:'Despair Aura',sh:200,ic:'shield',pick:'self',tg:'allAllies',fx:'cast',desc:'Shields ALL cultists until their next turn.'}]},
+  skills:[{name:"Elder's Grasp",d:780,ic:'atk',pick:'one',en:0,fx:'shoot',desc:'Crushing shadow grip on one disciple.'},
+   {name:'Soul Rend',d:370,ic:'aoe',pick:'all',en:2,fx:'shoot',desc:'Hits ALL disciples.'},
+   {name:'Despair Aura',sh:200,ic:'shield',pick:'self',tg:'allAllies',en:1,fx:'cast',desc:'Shields ALL cultists until their next turn.'}]},
  priestess:{name:'Blood Moon Priestess',role:'Shadow Moon Cult · Priestess',els:['shadow'],hp:1750,rot:[0,1,2],
   passive:{name:'Blood Moon',desc:'Keeps the cult alive with blood rites and burns her foes.'},note:'',
-  skills:[{name:'Sanguine Blast',d:780,el:'fire',ic:'atk',pick:'random',fx:'shoot',desc:'Blood-fire blast on a random ally.'},
-   {name:'Crimson Decree',burn:180,burnT:2,ic:'burn',pick:'all',fx:'shoot',desc:'Burns ALL allies (damage at the start of your next 2 turns).'},
-   {name:'Blood Rite',heal:480,ic:'heal',pick:'ally',fx:'cast',desc:'Heals the most injured cultist (casts Sanguine Blast instead if nobody is below 80%).'}]},
+  skills:[{name:'Sanguine Blast',d:780,el:'fire',ic:'atk',pick:'one',en:0,fx:'shoot',desc:'Blood-fire blast on one disciple.'},
+   {name:'Crimson Decree',burn:180,burnT:2,ic:'burn',pick:'all',en:2,fx:'shoot',desc:'Burns ALL disciples (damage at the start of your next 2 turns).'},
+   {name:'Blood Rite',heal:480,ic:'heal',pick:'ally',en:2,fx:'cast',desc:'Heals one cultist.'}]},
  hound:{name:'Shadow Hound',role:'Shadow Moon Cult · Beast',els:['shadow','earth'],hp:1500,rot:[0,1,2],
   passive:{name:'Pack Hunter',desc:'Hunts in bursts and howls to empower the cult.'},note:'',
-  skills:[{name:'Rending Fang',d:780,el:'earth',ic:'atk',pick:'random',fx:'lunge',desc:'Savage bite on a random ally.'},
-   {name:'Shadow Chase',d:460,ic:'atk',pick:'two',fx:'lunge',desc:'Hits two random allies.'},
-   {name:'Howl of Night',emp:1,ic:'buff',pick:'self',tg:'allAllies',fx:'cast',desc:'All cultists deal +25% damage with their next attack.'}]},
+  skills:[{name:'Rending Fang',d:780,el:'earth',ic:'atk',pick:'one',en:0,fx:'lunge',desc:'Savage bite on one disciple.'},
+   {name:'Shadow Chase',d:460,ic:'atk',pick:'two',en:1,fx:'lunge',desc:'Hits two disciples.'},
+   {name:'Howl of Night',emp:1,ic:'buff',pick:'self',tg:'allAllies',en:2,fx:'cast',desc:'All cultists deal +25% damage with their next attack.'}]},
 };
+/* PvE encounter tuning: the smarter cult AI (picks skill+target when it acts) wastes far less damage than the old fixed rotation, so this encounter's cult damage is scaled to keep the fight fair. */
+const CULT_DMG=+(new URLSearchParams(location.search).get('cdmg')||0.85);
 let UID=0;
 function mkUnit(kitId,side,cult){
  const K=cult?CULT[kitId]:KITS[kitId];
  const u={uid:'u'+(UID++),id:kitId,cult:!!cult,side,name:K.name,role:K.role,els:cult?K.els.slice():[K.el],el:cult?K.els[0]:K.el,maxHp:K.hp,hp:K.hp,img:IMG[kitId],passive:K.passive,note:K.note,rot:K.rot,
-  skills:K.skills.map(s=>({...s})),cdl:[0,0,0],shield:0,burn:0,burnDmg:0,burnBy:null,stun:false,skip:false,resolute:0,seal:false,dodge:false,emp:false,dead:false,acted:false,step:0,intent:null};
+  skills:K.skills.map(s=>({...s})),cdl:[0,0,0],shield:0,burn:0,burnDmg:0,burnBy:null,stun:false,skip:false,resolute:0,seal:false,dodge:false,emp:false,dead:false,acted:false,step:0,en:0};
  if(!cult)u.skills.forEach(k=>{k.el=u.el;});else u.skills.forEach(k=>{k.el=k.el||'shadow';});
  return u;
 }
@@ -407,6 +439,7 @@ function calc(src,t,base,el,single){
  const notes=[];let m=1;
  const weak=!!(OVER[el]&&t.els.includes(OVER[el]));
  if(weak){m*=1.3;notes.push(`${EL[el].n} beats ${EL[OVER[el]].n} +30%`);}
+ if(src.cult&&CULT_DMG!==1)m*=CULT_DMG;
  if(src.emp){m*=1.25;notes.push('Empowered +25%');}
  if(src.seal){m*=0.6;notes.push('Attacker Sealed −40%');}
  if(src.id==='feng'&&!src.cult&&t.hp<t.maxHp*.5){m*=1.25;notes.push('Keen Edge +25%');}
@@ -439,8 +472,7 @@ async function runSkill(u,k,t){
  // wildfire check (before burns are applied)
  if(u.id==='su'&&!u.cult&&k.d&&!SD(u).wildUsed&&ts.some(x=>x.side!==u.side&&x.burn>0)){SD(u).wildUsed=true;if(gainQi(u.side,'fire',1)){SD(u).st.qi+=1;popup(u,'WILDFIRE +1 Fire Qi','weak',-50);}}
  // animation
- if(!NOFX&&VFX[k.name]){await VFX[k.name](u,ts,k);for(const x of ts)await applyOn(u,k,x,ts.length>1);
-  if(k.qiGen){const others=allies(u).filter(a=>a!==u).sort((a,b)=>SD(u).qi[a.el]-SD(u).qi[b.el]).slice(0,k.qiGen);for(const a of others){if(gainQi(u.side,a.el,1)){SD(u).st.qi+=1;popup(a,`+1 ${EL[a.el].n} Qi`,'weak');}}}}
+ if(!NOFX&&VFX[k.name]){await VFX[k.name](u,ts,k);for(const x of ts)await applyOn(u,k,x,ts.length>1);}
  else if(hitsFoes){
   if(k.fx==='lunge'||k.fx==='lungeBig'){for(const x of ts){await lunge(u,x,k.el,k.fx==='lungeBig');await applyOn(u,k,x,ts.length>1);}}
   else{if(k.fx==='bolt')await bolt(u,ts[0]);else if(ts.length>1)await shootAll(u,ts,k.el);else if(ts[0])await shoot(u,ts[0],k.el);
@@ -448,8 +480,6 @@ async function runSkill(u,k,t){
  }else{
   await castFx(u,ts.length===1&&ts[0]!==u?ts[0]:null,k.heal?'heal':k.sh?'shield':k.qiGen?'qi':'buff');
   for(const x of ts)await applyOn(u,k,x,ts.length>1);
-  if(k.qiGen){const others=allies(u).filter(a=>a!==u).sort((a,b)=>SD(u).qi[a.el]-SD(u).qi[b.el]).slice(0,k.qiGen);
-   for(const a of others){const g=gainQi(u.side,a.el,1);if(g){SD(u).st.qi+=1;const c=center(a);ring(c.x,c.y,EL[a.el].c);popup(a,`+1 ${EL[a.el].n} Qi`,'weak');}await sleep(140);}}
  }
  if(k.dodgeSelf&&!u.dead){u.dodge=true;upd(u);popup(u,'DODGE READY','info',-40);}
  if(k.d){u.emp=false;u.seal=false;upd(u);} // buffs/debuffs on the attacker are consumed by its attack
@@ -465,6 +495,7 @@ async function applyOn(u,k,x,multi){
  if(k.heal){heal(u,x,k.heal);if(k.cleanse&&x.burn){x.burn=0;st.ctrl+=75;popup(x,'CLEANSED','heal',30);}}
  if(k.sh)addShield(u,x,k.sh);
  if(k.emp){x.emp=true;upd(x);popup(x,'EMPOWERED','info');}
+ if(k.qiGen){const g=gainQi(u.side,x.el,k.qiGen);if(g){st.qi+=g;const c=center(x);ring(c.x,c.y,EL[x.el].c);popup(x,`+${g} ${EL[x.el].n} Qi`,'weak');}else popup(x,'Qi FULL (10)','info');}
 }
 function tryStun(u,x){if(x.resolute>0||x.skip){popup(x,'RESISTED (Resolute)','info',30);return;}if(!x.stun){x.stun=true;SD(u).st.ctrl+=390;}upd(x);popup(x,x.cult?'STUNNED':'STUNNED','info',30);}
 async function hit(src,t,base,el,o={}){
@@ -485,7 +516,7 @@ async function hit(src,t,base,el,o={}){
 function heal(src,t,n){if(!t||t.dead)return;const h=Math.min(n,t.maxHp-t.hp);t.hp+=h;if(src)SD(src).st.heal+=h;const c=center(t);ring(c.x,c.y,'#5fe3a1');sparkUp(c.x,c.y,'#b9ffd8');popup(t,'+'+fmt(h),'heal');upd(t);}
 function addShield(src,t,n){if(!t||t.dead)return;t.shield+=n;if(src)SD(src).st.sh+=n;const c=center(t);ring(c.x,c.y,'#6ab8ff');popup(t,'+'+n+' shield','shield',20);upd(t);}
 async function ko(t){t.dead=true;t.shield=0;t.burn=0;t.stun=t.seal=t.dodge=t.emp=false;const c=center(t);burst(c.x,c.y,'#ffffff',40,3);burst(c.x,c.y,EL[t.el].c2,30,2.5);
- if(!NOFX)t.card.animate([{filter:'brightness(2.2) blur(0)',transform:'scale(1)'},{filter:'brightness(1.4) blur(3px)',transform:'scale(.95)',opacity:.25},{filter:'none',transform:'scale(1)',opacity:.6}],{duration:dur(800)});
+ if(!NOFX){cardGlow(t,'#ffffff',800);t.card.animate([{transform:'scale(1)',opacity:1},{transform:'scale(.95)',opacity:.25},{transform:'scale(1)',opacity:.6}],{duration:dur(800)});}
  upd(t);renderAvs();log(`<b>${t.name}</b> is knocked out!`);await sleep(450);}
 function checkEnd(){
  if(S.over)return true;
@@ -503,7 +534,7 @@ async function useSkill(u,i,t){
  pay(u,k);u.acted=true;if(k.cd)u.cdl[i]=k.cd+1;
  const link=!!(sd.lastEl&&GEN[sd.lastEl]===u.el);
  sd.chain.push({el:u.el,link});sd.lastEl=u.el;
- S.sel=null;S.skill=null;
+ S.sel=null;S.skill=null;S.trayU=null;
  log(`<b>${u.name}</b> uses <b>${k.name}</b>.`);
  updAll();renderHint();
  await runSkill(u,k,t);
@@ -549,24 +580,45 @@ async function nextRound(){
  setPhase('busy');S.sel=null;S.skill=null;
  banner(S.turn>=9?'HEAVENLY TRIBULATION · DAMAGE +'+Math.round(20*(S.turn-8))+'%':'YOUR TURN · '+S.turn,'turn',S.turn>=9?1200:800);await sleep(450);
  if(!await sideStart('p'))return;
- if(!MIRROR)chooseIntents();
  setPhase('player');updAll();renderQi();renderSurge();renderHint();
  const stunned=alive('p').filter(u=>u.skip);for(const u of stunned)popup(u,'STUNNED: skips turn','info');
  if(AUTO)autoPlay('p');
 }
-function chooseIntents(){
- for(const e of alive('e')){
-  let i=e.rot[e.step%e.rot.length];let t=null;
-  if(e.id==='priestess'&&i===2){t=alive('e').filter(a=>a.hp<a.maxHp*.8).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0]||null;if(!t)i=0;}
-  const k=e.skills[i],ps=alive('p');
-  if(!t){if(k.pick==='lowest')t=ps.slice().sort((a,b)=>a.hp-b.hp)[0];
-   else if(k.pick==='highest')t=ps.slice().sort((a,b)=>b.hp-a.hp)[0];
-   else if(k.pick==='random')t=ps[Math.floor(Math.random()*ps.length)];
-   else if(k.pick==='two')t=ps.slice().sort(()=>Math.random()-.5).slice(0,2);
-   else if(k.pick==='all')t='all';else t='self';}
-  e.intent={i,t};
- }
-}
+/* ===== Cult AI: decides skill + target at the moment it acts (nothing is announced in advance) =====
+ Every usable skill x target gets an expected value in "damage-equivalent" points:
+  damage = real HP loss after shields/Dodge/elements (+30% counters are included by calc), shields soaked count only 25%;
+  kill bonus (finish a disciple) + bigger bonus on the healer/Qi support; low-HP targets weigh more;
+  AOE sums all targets; burns are worth less on already-burning targets; heals only when a cultist is hurt;
+  energy spent is charged at ENERGY_VAL per point, so cheap filler is preferred unless the big skill is clearly worth it (saving up).
+ A small random factor picks among choices within ~8% of the best, so it is not predictable but never a bad move. */
+const AIT=Object.assign({ev:140,lin:1.25,xiao:1.15,low:.45,kill:700,healAt:.6},JSON.parse(Q.get('ait')||'{}'));const ENERGY_VAL=AIT.ev;
+const ROLEW=u=>u.id==='lin'?AIT.lin:u.id==='xiao'?AIT.xiao:1;
+function dmgValue(e,k,t,single){const c=calc(e,t,baseFor(k,t),k.el,single);if(c.dodge||c.dmg<=0)return -150;
+ const pct=t.hp/t.maxHp;let v=c.loss+c.abs*.25;
+ if(c.loss>=t.hp)v+=AIT.kill+1600*(ROLEW(t)-1);            // kill priority (healer / support kills are worth even more)
+ v*=ROLEW(t)*(1+AIT.low*(1-pct));                            // pressure the healer/support and the already wounded
+ return v;}
+function cultOptions(e){
+ const ps=alive('p'),cs=alive('e'),opts=[];
+ e.skills.forEach((k,i)=>{const cst=k.en||0;if(cst>e.en)return;let best=[];
+  if(k.d&&k.pick==='one')for(const t of ps)best.push({i,t,v:dmgValue(e,k,t,true)});
+  else if(k.d&&k.pick==='all')best.push({i,t:'all',v:ps.reduce((s,t)=>s+dmgValue(e,k,t,false),0)});
+  else if(k.d&&k.pick==='two'){const vs=ps.map(t=>({t,v:dmgValue(e,k,t,false)})).sort((a,b)=>b.v-a.v).slice(0,2);if(vs.length)best.push({i,t:vs.map(x=>x.t),v:vs.reduce((s,x)=>s+x.v,0)});}
+  else if(k.burn&&k.pick==='all')best.push({i,t:'all',v:ps.reduce((s,t)=>s+(t.burn>0?.3:.85)*Math.min(t.hp,k.burn*k.burnT)*ROLEW(t),0)});
+  else if(k.heal)for(const t of cs){const miss=t.maxHp-t.hp;if(t.hp>t.maxHp*AIT.healAt)continue;const pct=t.hp/t.maxHp;best.push({i,t,v:Math.min(k.heal,miss)*(pct<.4?1.5:1.05)});}
+  else if(k.sh&&k.pick==='self'){const hurt=cs.reduce((s,t)=>s+(1-t.hp/t.maxHp),0)/cs.length;best.push({i,t:'self',v:cs.filter(t=>t.shield<k.sh).length*k.sh*(.55+.8*hurt)});}
+  else if(k.emp&&k.pick==='self'){const others=cs.filter(c=>!c.emp);best.push({i,t:'self',v:others.reduce((s,c)=>s+.25*Math.max(...c.skills.map(x=>x.d||0)),0)*.9});}
+  for(const o of best){o.v-=cst*ENERGY_VAL;opts.push(o);}
+ });
+ return opts;}
+function cultChoose(e){const opts=cultOptions(e);if(!opts.length)return{i:0,t:alive('p')[0]};
+ const top=Math.max(...opts.map(o=>o.v));const near=opts.filter(o=>o.v>=top-Math.max(40,Math.abs(top)*.08));
+ const pick=near[Math.floor(Math.random()*near.length)];return pick;}
+/* readable enemy turn: attacker glows and a red (or green for its own heals) arrow points at the target for a moment before the VFX */
+async function enemyTell(e,k,t){if(NOFX)return;cardGlow(e,'#b07cff',700,1);
+ const tt=t&&t.uid?t:Array.isArray(t)?t[0]:null;if(!tt){await sleep(420);return;}
+ S.aiming=true;aimSrc=e;S.hoverT=tt;S.tellAlly=!!(k.heal||k.sh);aimG.style.display='block';drawAim();await sleep(520);
+ S.aiming=false;aimSrc=null;S.hoverT=null;S.tellAlly=false;aimG.style.display='none';updAll();}
 async function endTurn(){
  if(S.phase!=='player'||S.busy||S.over)return;
  clearAim();hideTip();endSideCleanup('p');
@@ -576,29 +628,29 @@ async function endTurn(){
  if(MIRROR){await autoPlay('e');}
  else for(const e of S.enemies){
   if(e.dead)continue;
-  if(e.skip){popup(e,'SKIPS TURN','info');log(`<b>${e.name}</b> is stunned and loses its action.`);await sleep(450);e.step++;continue;}
-  const it=e.intent||{i:0,t:null};const k=e.skills[it.i];let t=it.t;const ps=alive('p');if(!ps.length)break;
-  if(t&&t.side==='p'&&t.dead)t=k.pick==='lowest'?ps.slice().sort((a,b)=>a.hp-b.hp)[0]:ps[Math.floor(Math.random()*ps.length)];
-  if(Array.isArray(t)){t=t.filter(x=>!x.dead);if(!t.length)t=[ps[0]];}
-  if(t&&t.side==='e'&&t.dead)t=lowestPct('e');
+  if(e.skip){e.en=Math.min(4,e.en+1);popup(e,'SKIPS TURN','info');log(`<b>${e.name}</b> is stunned and loses its action.`);await sleep(450);e.step++;continue;}
+  const ps=alive('p');if(!ps.length)break;
+  e.en=Math.min(4,e.en+1);
+  const ch=cultChoose(e);const k=e.skills[ch.i];let t=ch.t;e.en-=k.en||0;
   log(`<b>${e.name}</b> uses <b>${k.name}</b>.`);
+  await enemyTell(e,k,t);
   const before={...S.sides.e.st};
   await runSkill(e,k,t==='all'||t==='self'?null:t);
   const a=S.sides.e.st;const rec=S.use['[Cult] '+k.name]=S.use['[Cult] '+k.name]||{n:0,val:0,qi:0};rec.n++;rec.val+=(a.dmg-before.dmg)/300+(a.heal-before.heal)/240+(a.sh-before.sh)/300;
-  e.step++;e.intent=null;upd(e);
+  e.step++;upd(e);
   if(checkEnd())return;await sleep(220);
  }
  endSideCleanup('e');
  if(checkEnd())return;
  await nextRound();
 }
-function setPhase(p){S.phase=p;$('#endBtn').classList.toggle('dis',p!=='player');$('#endBtn').classList.remove('ready');}
+function setPhase(p){S.phase=p;if(p!=='player'&&S.trayU){S.trayU=null;}if(!NOFX&&typeof renderTray==='function')renderTray();$('#endBtn').classList.toggle('dis',p!=='player');$('#endBtn').classList.remove('ready');}
 
 /* ===== simple AI (used by AUTO and by the rival team in mirror tests) ===== */
 function bestOrder(us){let best=us,bs=-1;const perm=(a,r=[])=>{if(!a.length){let s=0;for(let i=1;i<r.length;i++)if(GEN[r[i-1].el]===r[i].el)s++;if(s>bs){bs=s;best=r;}return;}a.forEach((x,i)=>perm(a.filter((_,j)=>j!==i),[...r,x]));};perm(us);return best;}
-function threatOf(e){if(!e.cult){return e.skills.reduce((m,k)=>Math.max(m,k.d||0),0);}if(!e.intent||e.skip||e.stun)return 0;const k=e.skills[e.intent.i];const v=k.d||0;return k.pick==='all'?v*2.4:k.pick==='two'?v*1.6:v||200;}
-function incoming(p){let s=0;for(const e of alive(other(p.side))){if(!e.cult||!e.intent||e.stun||e.skip)continue;const k=e.skills[e.intent.i];if(!k.d)continue;const t=e.intent.t;
- if(t===p||t==='all'||(Array.isArray(t)&&t.includes(p)))s+=calc(e,p,k.d,k.el,t===p).dmg;}return s;}
+function threatOf(e){if(e.stun)return 0;return e.skills.reduce((m,k)=>Math.max(m,(k.d||0)*(k.pick==='all'?2.4:k.pick==='two'?1.6:1)*((k.en||0)<=(e.en??9)+1?1:.6)),0)||200;}
+/* AUTO no longer sees enemy intents: it shields whoever is most exposed (lowest HP %, weak to Metal/Earth/Fire cult attacks counts double) */
+function incoming(p){const els=new Set();for(const e of alive(other(p.side)))for(const k of e.skills)if(k.d)els.add(k.el);let w=0;for(const el of els)if(OVER[el]&&p.els.includes(OVER[el]))w++;return (1-p.hp/p.maxHp)+.25*w;}
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 function aiChoose(u){
  const es=foes(u),ps=allies(u);if(!es.length)return null;
@@ -610,10 +662,10 @@ function aiChoose(u){
  if(u.id==='lin'){
   if(can(2)&&(hurt>=2||ps.filter(p=>p.hp<p.maxHp*.8).length>=3))return[2,null];
   if(can(1)&&l.hp<l.maxHp*.55)return[1,l];
-  if(can(0)){const inc=ps.slice().sort((a,b)=>incoming(b)-incoming(a))[0];return[0,incoming(inc)>0?inc:l];}return null;}
+  if(can(0)){const inc=ps.slice().sort((a,b)=>incoming(b)-incoming(a))[0];return[0,inc||l];}return null;}
  if(u.id==='xiao'){
   if(can(2)){const sealed=es.find(e=>e.seal&&!e.resolute);return[2,sealed||tgt];}
-  if(can(1)&&ps.length>=3&&qiTotal(u.side)<=7&&Math.random()<.7)return[1,null];
+  if(can(1)&&ps.length>=2&&qiTotal(u.side)<=8&&Math.random()<.7){const q=SD(u).qi;const o=ps.filter(p=>p!==u).sort((a,b)=>(canAfford(a,a.skills[2])-canAfford(b,b.skills[2]))||(q[a.el]-q[b.el])||(threatOf(b)-threatOf(a)))[0];if(o)return[1,o];}
   if(can(0)){const ns=es.filter(e=>!e.seal&&!e.dodge).sort((a,b)=>threatOf(b)-threatOf(a));return[0,ns[0]||tgt];}return null;}
  if(u.id==='su'){
   if(can(2)&&es.length>=2)return[2,null];
@@ -652,14 +704,14 @@ function buildCards(){
   const sk=u.skills.map((k,i)=>{let c;if(!u.cult){const co=cost(k);c=Array(co.own).fill(dotH(u.el)).join('')+(co.any?'<span class="dot any"></span>':'');}else c=icon(k.ic,'width:12px;height:12px;fill:#9a5ac8');
    return `<div class="sk" data-i="${i}" data-tip="skill" data-uid="${u.uid}"><span class="cost">${c}</span><span class="skn">${k.name}</span><span class="skv">${skillVal(u,k)}</span></div>`;}).join('');
   const sub=u.els[1]?jewel(u.els[1],'sub'):'';
-  s.innerHTML=`<div class="card ${u.side==='e'?'enemy':'player'}" data-tip="card" data-uid="${u.uid}"><div class="frame"></div><div class="inner" style="background-image:url(${u.img})">
-   <div class="sheen"></div><div class="shade"></div>${jewel(u.el)}${sub}
-   <div class="statuses"></div><div class="chainBadge">&#10227; SURGE +1</div><div class="intent"></div>
+  s.innerHTML=`<div class="card ${u.side==='e'?'enemy':'player'}" data-tip="card" data-uid="${u.uid}"><div class="tglow"></div><div class="frame"></div><div class="inner" style="background-image:url(${u.img})">
+   <div class="sheen"></div><div class="hitfl"></div><div class="shade"></div>${jewel(u.el)}${sub}
+   <div class="statuses"></div><div class="chainBadge">&#10227; SURGE +1</div>
    <div class="nameplate"><div class="nm" style="${u.name.length>15?'font-size:12px':''}">${u.name}</div><div class="st">&#9733;&#9733;&#9733;&#9733;&#9733;</div></div>
    <div class="pv"></div>
    <div class="strip">${sk}</div>
    <div class="hp"><div class="ghost"></div><div class="fill"></div><div class="prev"></div><div class="shbar"></div><div class="lbl"><span>HP</span><span class="hpt"></span></div></div>
-   </div><div class="actedTag">ACTED</div><div class="koTag">K.O.</div></div>`;
+   </div><div class="koTag">K.O.</div><div class="fxglow"></div></div>`;
   box.appendChild(s);u.slot=s;u.card=s.firstChild;
   upd(u);
  }
@@ -669,7 +721,7 @@ function renderAvs(){
  const a=u=>`<div class="av ${u.dead?'dead':''}" style="--c:${EL[u.els[u.els.length-1]].c};background-image:url(${u.img})" data-tip="card" data-uid="${u.uid}"><div class="b" style="background:${EL[u.el].c}"><svg viewBox="0 0 24 24">${SVG[u.el]}</svg></div></div>`;
  $('#avs').innerHTML=S.players.map(a).join('')+'<div class="avsep"></div>'+S.enemies.map(a).join('');
 }
-function updAll(){S.all.forEach(upd);}
+function updAll(){S.all.forEach(upd);if(S.trayU||$('#tray').classList.contains('show'))renderTray();}
 function upd(u){
  const c=u.card;if(!c||NOFX&&!S.over)return;
  const pct=Math.max(0,u.hp/u.maxHp*100);
@@ -698,14 +750,6 @@ function upd(u){
   c.querySelectorAll('.sk').forEach((r,i)=>{const ok=u.side==='p'&&myTurn&&canUse(u,i);r.classList.toggle('ok',ok);r.classList.toggle('no',u.side==='p'&&!ok);r.classList.toggle('pick',S.sel===u&&S.skill===i);
    const v=r.querySelector('.skv');if(u.cdl[i]>0){v.textContent='CD '+u.cdl[i];v.classList.add('cd');}else{v.innerHTML=skillVal(u,u.skills[i]);v.classList.remove('cd');}});
  }
- if(u.cult){
-  const it=c.querySelector('.intent');
-  if(u.intent&&!u.dead&&S.phase!=='end'){
-   if(u.stun)it.innerHTML=`${icon('stun')}Stunned: will skip`;
-   else{const k=u.skills[u.intent.i];const t=u.intent.t;const tt=Array.isArray(t)?'2 random':t==='all'?'All':t==='self'?'Cult':t?t.name.split(' ')[0]:'';it.innerHTML=`${icon(k.ic)}${k.name} &rarr; ${tt}`;}
-   it.classList.add('show');it.dataset.tip='card';it.dataset.uid=u.uid;
-  }else it.classList.remove('show');
- }
  // targeting highlight + previews
  const pv=c.querySelector('.pv'),pr=c.querySelector('.prev');pv.className='pv';pr.style.display='none';
  const tgts=S.sel&&S.skill!=null?validTargets(S.sel,S.sel.skills[S.skill]):[];
@@ -719,10 +763,10 @@ function upd(u){
     pr.className='prev dm';pr.style.display='block';pr.style.left=((u.hp-cc.loss)/u.maxHp*100)+'%';pr.style.width=(cc.loss/u.maxHp*100)+'%';}}
   else if(k.heal){pv.textContent=`+${fmt(r.heal)} HP${k.sh?` +${k.sh} shield`:''}`;pv.classList.add('show','hl');pr.className='prev hl';pr.style.display='block';pr.style.left=(u.hp/u.maxHp*100)+'%';pr.style.width=(r.heal/u.maxHp*100)+'%';}
   else if(k.sh){pv.textContent=`+${k.sh} shield`;pv.classList.add('show','sh');}
-  else if(k.qiGen){pv.textContent=u===S.sel?'Caster':'+1 Qi?';pv.classList.add('show','qi');}
+  else if(k.qiGen){pv.textContent=`+${k.qiGen} ${EL[u.el].n} Qi`;pv.classList.add('show','qi');}
   if(S.hoverT===u)pv.classList.add('hot');
  }
- u.slot.classList.toggle('sel',S.sel===u);
+ u.slot.classList.toggle('sel',S.sel===u||(S.trayU===u&&!S.sel));
 }
 function renderQi(bump){
  if(NOFX)return;
@@ -750,39 +794,58 @@ function renderHint(){
  if(S.phase==='enemy')h=MIRROR?'Rival team is acting...':'The Shadow Moon Cult is acting...';
  else if(S.phase!=='player')h='...';
  else if(AUTO)h='<b>AUTO</b> is playing for you. Tap AUTO to take control.';
- else if(S.sel&&S.skill!=null){const k=S.sel.skills[S.skill];h=isAoe(k)?`<b>${k.name}</b> hits every highlighted card. <b>Tap the skill again</b> or a highlighted card to cast.`:`<b>${k.name}</b>: drag the arrow to a glowing target, or tap it. Tap empty space to cancel.`;}
- else{const left=alive('p').filter(u=>u.skills.some((k,i)=>canUse(u,i))).length;h=left?`Tap a <b>skill</b> on a disciple (${left} can still act). Hold or hover anything for details.`:'No more actions possible. Press <b>END TURN</b>.';}
+ else if(S.sel&&S.skill!=null){const k=S.sel.skills[S.skill];h=isAoe(k)?`<b>${k.name}</b> hits every highlighted card. <b>Tap the skill again</b> or a highlighted card to cast.`:(k.tg==='ally'?`<b>${k.name}</b>: drag the <b style="color:#1fbf7a">green arrow</b> to the ally you want, or tap it. Tap empty space to cancel.`:`<b>${k.name}</b>: drag the arrow to a glowing target, or tap it. Tap empty space to cancel.`);}
+ else{const left=alive('p').filter(u=>u.skills.some((k,i)=>canUse(u,i))).length;h=left?(isTouch()?`Tap a <b>disciple</b> to open its skills (${left} can still act). Press and hold anything for details.`:`Tap a <b>skill</b> on a disciple (${left} can still act). Hold or hover anything for details.`):'No more actions possible. Press <b>END TURN</b>.';}
  $('#hintBox').innerHTML=h;
 }
 function log(t){if(!NOFX)$('#log').innerHTML='<span>'+t+'</span>';}
-function validTargets(u,k){if(k.tg==='foe'||k.tg==='allFoes')return foes(u);if(k.tg==='allAllies')return allies(u);return allies(u);}
+function validTargets(u,k){if(k.tg==='foe'||k.tg==='allFoes')return foes(u);if(k.tg==='allAllies')return allies(u);return allies(u).filter(a=>!(k.noSelf&&a===u));}
 
 /* ===== FX ===== */
 const cv=$('#fxc'),cx=cv.getContext('2d');let parts=[],strokes=[],fxRun=false;
-function fitCanvas(){const d=Math.min(2,window.devicePixelRatio||1)*SCALE;for(const c of [cv,$('#bgfx')]){c.width=Math.round(W*d);c.height=Math.round(H*d);c.getContext('2d').setTransform(d,0,0,d,0,0);}}
+/* PERF: the FX canvas is capped at 1.5x backing scale and the petal layer at 1x (soft shapes, no visible loss) */
+function fitCanvas(){const dp=window.devicePixelRatio||1;const d1=Math.min(1.5,dp*SCALE),d2=Math.min(1,dp*SCALE);for(const[c,d]of [[cv,d1],[$('#bgfx'),d2]]){c.width=Math.round(W*d);c.height=Math.round(H*d);c.getContext('2d').setTransform(d,0,0,d,0,0);}}
+/* PERF: canvas shadowBlur is the single most expensive call in the VFX (a gaussian blur per draw, very slow on phones).
+   It is replaced by two cheap translucent halo passes in the shadow colour, which keeps the soft neon look. ?glow=blur restores real blur. */
+if(Q.get('glow')!=='blur'){const _st=cx.stroke.bind(cx),_fi=cx.fill.bind(cx),_fr=cx.fillRect.bind(cx);
+ const halo=(b,pass)=>{const ga=cx.globalAlpha,lw=cx.lineWidth,ss=cx.strokeStyle,lj=cx.lineJoin;cx.shadowBlur=0;cx.strokeStyle=cx.shadowColor;cx.lineJoin='round';
+  cx.globalAlpha=ga*.14;cx.lineWidth=pass(1.15*b);_st();cx.globalAlpha=ga*.26;cx.lineWidth=pass(.55*b);_st();cx.globalAlpha=ga;cx.lineWidth=lw;cx.strokeStyle=ss;cx.lineJoin=lj;};
+ cx.stroke=function(){const b=cx.shadowBlur;if(!b)return _st();const lw=cx.lineWidth;halo(b,x=>lw+x);_st();cx.shadowBlur=b;};
+ cx.fill=function(){const b=cx.shadowBlur;if(!b)return _fi();halo(b,x=>x);_fi();cx.shadowBlur=b;};
+ cx.fillRect=function(x,y,w,h){const b=cx.shadowBlur;if(!b)return _fr(x,y,w,h);cx.beginPath();cx.rect(x,y,w,h);halo(b,v=>v);_fr(x,y,w,h);cx.shadowBlur=b;};}
+/* PERF: ONE requestAnimationFrame loop drives petals, FX particles/strokes and the aiming arrow */
+let fxDirty=false,aimQ=null;
+function frame(t){
+ requestAnimationFrame(frame);
+ petalStep(t);
+ if(parts.length||strokes.length)loop();else if(fxDirty){cx.clearRect(0,0,W,H);fxDirty=false;}
+ if(aimQ){const e=aimQ;aimQ=null;aimHover(e);}
+ if(S&&S.aiming&&aimSrc)aimStep(t);
+}
 function loop(){
- cx.clearRect(0,0,W,H);const k=Math.min(4,SPEED*TESTSPEED);
+ cx.clearRect(0,0,W,H);fxDirty=true;const k=Math.min(4,SPEED*TESTSPEED);
  parts=parts.filter(p=>p.life>0);strokes=strokes.filter(s=>s.t<1);
  cx.globalCompositeOperation='source-over';
  for(const p of parts){p.x+=p.vx*k;p.y+=p.vy*k;p.vy+=p.g*k;p.vx*=.97;p.vy*=.97;p.life-=p.dec*k;if(p.life<=0)continue;
   cx.globalAlpha=Math.min(1,p.life);cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,Math.max(.1,p.r*(0.5+p.life*.5)),0,7);cx.fill();}
  for(const s of strokes){s.t+=s.sp*k;try{s.draw(s);}catch(e){s.t=1;}}
  cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
- if(parts.length||strokes.length)requestAnimationFrame(loop);else fxRun=false;
 }
-function kick(){if(!fxRun){fxRun=true;requestAnimationFrame(loop);}}
-function burst(x,y,c,n=16,sp=2){if(NOFX)return;for(let i=0;i<n;i++){const a=Math.random()*6.28,v=(0.5+Math.random())*sp*2;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:0.03,r:2+Math.random()*3,c,life:1,dec:0.02+Math.random()*0.02});}kick();}
-function sparkUp(x,y,c){if(NOFX)return;for(let i=0;i<14;i++)parts.push({x:x+(Math.random()-.5)*110,y:y+40+Math.random()*40,vx:0,vy:-1-Math.random()*1.5,g:0,r:2+Math.random()*2.5,c,life:1,dec:0.018});kick();}
+function kick(){}
+function burst(x,y,c,n=16,sp=2){if(NOFX)return;for(let i=0;i<n;i++){if(parts.length>=MAXP)break;const a=Math.random()*6.28,v=(0.5+Math.random())*sp*2;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:0.03,r:2+Math.random()*3,c,life:1,dec:0.02+Math.random()*0.02});}kick();}
+function sparkUp(x,y,c){if(NOFX)return;for(let i=0;i<14&&parts.length<MAXP;i++)parts.push({x:x+(Math.random()-.5)*110,y:y+40+Math.random()*40,vx:0,vy:-1-Math.random()*1.5,g:0,r:2+Math.random()*2.5,c,life:1,dec:0.018});kick();}
 function slash(x,y,c,c2){if(NOFX)return;const a0=Math.random()*1.2-2.2;strokes.push({t:0,sp:0.07,draw:s=>{const e=Math.min(1,s.t*1.8);cx.save();cx.globalAlpha=Math.max(0,1-s.t);cx.strokeStyle=c2;cx.lineWidth=Math.max(.5,10*(1-s.t)+2);cx.shadowColor=c;cx.shadowBlur=18;cx.lineCap='round';cx.beginPath();cx.arc(x-20,y+20,70,a0,a0+e*1.9);cx.stroke();cx.strokeStyle='#fff';cx.lineWidth=Math.max(.5,3*(1-s.t)+1);cx.stroke();cx.restore();}});kick();}
 function ring(x,y,c){if(NOFX)return;strokes.push({t:0,sp:0.035,draw:s=>{cx.save();cx.globalAlpha=Math.max(0,1-s.t);cx.strokeStyle=c;cx.lineWidth=5;cx.shadowColor=c;cx.shadowBlur=14;cx.beginPath();cx.arc(x,y,Math.max(1,20+s.t*80),0,7);cx.stroke();cx.restore();}});kick();}
 function orb(a,b,c,c2,ms){if(NOFX)return Promise.resolve();return new Promise(res=>{const t0=performance.now();const D=dur(ms);setTimeout(res,D+60);strokes.push({t:0,sp:0,draw:s=>{const p=Math.min(1,(performance.now()-t0)/D);const x=a.x+(b.x-a.x)*p,y=a.y+(b.y-a.y)*p-Math.sin(p*3.14)*40;
-  for(let i=0;i<2;i++)parts.push({x,y,vx:(Math.random()-.5),vy:(Math.random()-.5),g:0,r:3+Math.random()*3,c:c2,life:.8,dec:0.05});
+  for(let i=0;i<2&&parts.length<MAXP;i++)parts.push({x,y,vx:(Math.random()-.5),vy:(Math.random()-.5),g:0,r:3+Math.random()*3,c:c2,life:.8,dec:0.05});
   cx.save();cx.fillStyle='#fff';cx.shadowColor=c;cx.shadowBlur=24;cx.beginPath();cx.arc(x,y,9,0,7);cx.fill();cx.restore();if(p>=1){s.t=1;res();}}});kick();});}
 async function shoot(u,t,el){glow(u,el);await orb(center(u),center(t),EL[el].c,EL[el].c2,380);}
 async function shootAll(u,ts,el){glow(u,el);await Promise.all(ts.map(t=>orb(center(u),center(t),EL[el].c,EL[el].c2,420)));}
 async function bolt(u,t){if(NOFX)return;glow(u,'wood');const a=center(u),b=center(t);const pts=[];for(let i=0;i<=8;i++)pts.push({x:a.x+(b.x-a.x)*i/8+(i%8?(Math.random()-.5)*40:0),y:a.y+(b.y-a.y)*i/8});
  strokes.push({t:0,sp:0.05,draw:s=>{cx.save();cx.globalAlpha=Math.max(0,1-s.t);cx.strokeStyle='#eaffd0';cx.shadowColor='#7dff6a';cx.shadowBlur=24;cx.lineWidth=5;cx.beginPath();pts.forEach((p,i)=>i?cx.lineTo(p.x,p.y):cx.moveTo(p.x,p.y));cx.stroke();cx.restore();}});kick();await sleep(220);}
-function glow(u,el){if(NOFX)return;u.card.animate([{filter:'brightness(1)'},{filter:`brightness(1.35) drop-shadow(0 0 14px ${EL[el].c})`},{filter:'brightness(1)'}],{duration:dur(500)});const c=center(u);burst(c.x,c.y,EL[el].c2,12,1.2);}
+/* PERF: card glows/flashes animate only the OPACITY of pre-styled overlay layers (compositor-only) instead of animating CSS filters */
+function cardGlow(u,col,ms,peak=1){if(NOFX||!u.card)return;const g=u.card.querySelector('.fxglow');g.style.setProperty('--gc',col);g.getAnimations().forEach(a=>a.cancel());g.animate([{opacity:0},{opacity:peak},{opacity:0}],{duration:dur(ms)});}
+function glow(u,el){if(NOFX)return;cardGlow(u,EL[el].c,500,.9);const c=center(u);burst(c.x,c.y,EL[el].c2,12,1.2);}
 async function lunge(u,t,el,big){if(NOFX)return;const a=center(u),b=center(t);const dx=(b.x-a.x)*.42,dy=(b.y-a.y)*.42;
  glow(u,el);u.slot.style.zIndex=30;
  u.card.animate([{transform:'translate(0,0) scale(1)'},{transform:`translate(${-dx*.08}px,${-dy*.08}px) scale(1.03)`,offset:.3},{transform:`translate(${dx}px,${dy}px) scale(${big?1.12:1.06}) rotate(${dx>0?3:-3}deg)`,offset:.6},{transform:'translate(0,0) scale(1)'}],{duration:dur(big?620:520),easing:'ease-in-out'});
@@ -790,18 +853,19 @@ async function lunge(u,t,el,big){if(NOFX)return;const a=center(u),b=center(t);co
 async function castFx(u,t,kind){if(NOFX)return;const c=center(u);const col={heal:'#5fe3a1',qi:'#ffd46b',shield:'#6ab8ff',buff:'#c58bff'}[kind]||'#ffffff';glow(u,u.el);ring(c.x,c.y,col);burst(c.x,c.y,col,24,1.6);
  if(t)await orb(c,center(t),col,'#ffffff',320);else await sleep(300);}
 function shake(u){if(NOFX)return;u.card.animate([{transform:'translateX(0)'},{transform:'translateX(-7px) rotate(-1deg)'},{transform:'translateX(6px) rotate(1deg)'},{transform:'translateX(-4px)'},{transform:'translateX(0)'}],{duration:dur(320)});
- u.card.querySelector('.inner').animate([{filter:'brightness(2.2) saturate(.3)'},{filter:'none'}],{duration:dur(260)});}
+ u.card.querySelector('.hitfl').animate([{opacity:.62},{opacity:0}],{duration:dur(260)});}
 function dodgeAnim(u){if(NOFX)return;u.card.animate([{transform:'translateX(0)',opacity:1},{transform:'translateX(26px)',opacity:.5},{transform:'translateX(0)',opacity:1}],{duration:dur(380)});}
-function popup(u,txt,cls,dy=0){if(NOFX)return;const c=center(u);const d=document.createElement('div');d.className='pop '+cls;d.textContent=txt;d.style.left=Math.min(W-60,Math.max(60,c.x+(Math.random()-.5)*16))+'px';d.style.top=(c.y+dy-10)+'px';$('#fxl').appendChild(d);
- d.animate([{transform:'translate(-50%,-30%) scale(.5)',opacity:0},{transform:'translate(-50%,-70%) scale(1.15)',opacity:1,offset:.18},{transform:'translate(-50%,-90%) scale(1)',opacity:1,offset:.6},{transform:'translate(-50%,-150%) scale(.95)',opacity:0}],{duration:dur(1150),easing:'ease-out'}).onfinish=()=>d.remove();}
+/* PERF: popup nodes are pooled and reused */
+const popPool=[];
+function popup(u,txt,cls,dy=0){if(NOFX)return;const c=center(u);const d=popPool.pop()||document.createElement('div');d.className='pop '+cls;d.textContent=txt;d.style.left=Math.min(W-60,Math.max(60,c.x+(Math.random()-.5)*16))+'px';d.style.top=(c.y+dy-10)+'px';$('#fxl').appendChild(d);
+ d.animate([{transform:'translate(-50%,-30%) scale(.5)',opacity:0},{transform:'translate(-50%,-70%) scale(1.15)',opacity:1,offset:.18},{transform:'translate(-50%,-90%) scale(1)',opacity:1,offset:.6},{transform:'translate(-50%,-150%) scale(.95)',opacity:0}],{duration:dur(1150),easing:'ease-out'}).onfinish=()=>{d.remove();if(popPool.length<40)popPool.push(d);};}
 function banner(txt,cls,ms=900){if(NOFX)return;const d=document.createElement('div');d.className='banner '+cls;d.textContent=txt;$('#fxl').appendChild(d);
  d.animate([{transform:'translate(-50%,-50%) scaleX(.2)',opacity:0},{transform:'translate(-50%,-50%) scaleX(1)',opacity:1,offset:.2},{transform:'translate(-50%,-50%) scaleX(1)',opacity:1,offset:.8},{transform:'translate(-50%,-50%) scaleX(1.1)',opacity:0}],{duration:dur(ms)}).onfinish=()=>d.remove();}
 /* background petals */
 const bgc=$('#bgfx'),bx=bgc.getContext('2d');const petals=[];
 for(let i=0;i<26;i++)petals.push({x:Math.random()*W,y:Math.random()*H,s:3+Math.random()*4,vx:.25+Math.random()*.5,vy:.25+Math.random()*.45,a:Math.random()*6,va:(Math.random()-.5)*.04,w:Math.random()*6});
-function petalLoop(t){bx.clearRect(0,0,W,H);for(const p of petals){p.x+=p.vx+Math.sin(t/1400+p.w)*.3;p.y+=p.vy;p.a+=p.va;if(p.y>H+10||p.x>W+10){p.x=Math.random()*W*.8-60;p.y=-10;}
- bx.save();bx.translate(p.x,p.y);bx.rotate(p.a);bx.scale(1,.55+.45*Math.sin(t/500+p.w));bx.fillStyle='rgba(255,182,212,.85)';bx.beginPath();bx.ellipse(0,0,p.s,p.s*.62,0,0,7);bx.fill();bx.fillStyle='rgba(255,236,244,.9)';bx.beginPath();bx.ellipse(-p.s*.25,-p.s*.15,p.s*.35,p.s*.2,0,0,7);bx.fill();bx.restore();}
- requestAnimationFrame(petalLoop);}
+function petalStep(t){bx.clearRect(0,0,W,H);for(const p of petals){p.x+=p.vx+Math.sin(t/1400+p.w)*.3;p.y+=p.vy;p.a+=p.va;if(p.y>H+10||p.x>W+10){p.x=Math.random()*W*.8-60;p.y=-10;}
+ bx.save();bx.translate(p.x,p.y);bx.rotate(p.a);bx.scale(1,.55+.45*Math.sin(t/500+p.w));bx.fillStyle='rgba(255,182,212,.85)';bx.beginPath();bx.ellipse(0,0,p.s,p.s*.62,0,0,7);bx.fill();bx.fillStyle='rgba(255,236,244,.9)';bx.beginPath();bx.ellipse(-p.s*.25,-p.s*.15,p.s*.35,p.s*.2,0,0,7);bx.fill();bx.restore();}}
 /* ===== tooltips ===== */
 const tip=$('#tip');let tipEl=null;
 function costLine(u,k){const c=cost(k);const q=SD(u).qi;return `${Array(c.own).fill(dotH(u.el)).join('')}${c.any?'<span class="dot any"></span>':''} <b>${c.own} ${EL[u.el].n}${c.any?' + 1 any':''}</b> <span class="muted">(you have ${q[u.el]} ${EL[u.el].n}, ${qiTotal(u.side)} total)</span>`;}
@@ -817,14 +881,13 @@ function tipSkill(u,i){
  const single=!isAoe(k)&&k.pick!=='two';
  const ft=S.hoverT&&S.sel===u&&S.skill===i?[S.hoverT]:null;
  if(u.cult){
-  const isInt=u.intent&&u.intent.i===i&&!u.stun;
-  let ts=isInt?(u.intent.t==='all'?alive('p'):Array.isArray(u.intent.t)?u.intent.t.filter(x=>!x.dead):u.intent.t&&u.intent.t!=='self'&&!u.intent.t.dead?[u.intent.t]:[]):alive('p');
+  const ts=alive('p');
   if(k.d){h+=dmgRange(u,k,ts.filter(t=>t.side==='p'),single,isAoe(k)?'Damage (each)':'Damage');}
-  if(k.burn)h+=`<div>Burn <b>${k.burn} × ${k.burnT} turns</b> on each ally (${k.burn*k.burnT} total each).</div>`;
+  if(k.burn)h+=`<div>Burn <b>${k.burn} × ${k.burnT} turns</b> on each disciple (${k.burn*k.burnT} total each).</div>`;
   if(k.heal)h+=`<div class="good">Heal up to ${k.heal}.</div>`;
+  if(k.en)h+=`<div class="muted">Needs ${k.en} Shadow energy (cultists gain 1 per turn).</div>`;
   if(k.sh)h+=`<div>Shield <span class="shc">${k.sh}</span> on each cultist.</div>`;
   if(k.emp)h+=`<div>Next attack of each cultist +25%.</div>`;
-  if(isInt)h+=`<div class="gold">This is its NEXT action.</div>`;
   return h;
  }
  h+=`<div>Cost: ${costLine(u,k)}</div>`;
@@ -835,10 +898,11 @@ function tipSkill(u,i){
  if(k.stun)h+=`<div>Charm/Stun: skips its next action, then <b>Resolute</b> (stun immune) for 2 turns.</div>`;
  if((k.stun||k.thunder)){const r=foes(u).filter(e=>e.resolute>0||e.skip);if(r.length)h+=`<div class="bad">Resolute now: ${r.map(e=>e.name).join(', ')}</div>`;}
  if(k.dodgeSelf)h+=`<div>Then Dodge: the next single-target attack on ${u.name.split(' ')[0]} misses.</div>`;
- if(k.heal){h+=`<div class="row"><span>${k.tg==='allAllies'?'Heal (each ally)':'Heal'}</span><span><span class="good">+${fmt(k.heal)}</span>${k.sh?` <span class="shc">+${k.sh} shield</span>`:''}</span></div><div class="muted">Healing is capped by missing HP.</div>`;}
+ if(k.tg==='ally'&&!k.qiGen&&!(ft&&ft[0]))h+=`<div class="muted">Target: an ally of your choice (aim with the green arrow).</div>`;
+ if(k.heal){h+=`<div class="row"><span>${k.tg==='allAllies'?'Heal (each ally)':ft&&ft[0]?'Heal '+ft[0].name.split(' ')[0]:'Heal'}</span><span><span class="good">+${fmt(k.heal)}</span>${k.sh?` <span class="shc">+${k.sh} shield</span>`:''}</span></div><div class="muted">Healing is capped by missing HP.</div>`;}
  else if(k.sh)h+=`<div>Shield <span class="shc">${k.sh}</span>${k.tg==='allAllies'?' on each ally':''}: absorbs damage until the start of your next turn.</div>`;
  if(k.cleanse)h+=`<div>Removes Burn.</div>`;
- if(k.qiGen){const o=allies(u).filter(a=>a!==u).sort((a,b)=>SD(u).qi[a.el]-SD(u).qi[b.el]).slice(0,k.qiGen);h+=`<div>Would give now: ${o.map(a=>`<b style="color:${EL[a.el].c2}">+1 ${EL[a.el].n}</b>`).join(', ')||'nothing'} (cap 10 total).</div>`;}
+ if(k.qiGen){const a=ft&&ft[0];h+=a?`<div>Gives <b>${a.name}</b>: <b style="color:${EL[a.el].c2}">+${k.qiGen} ${EL[a.el].n} Qi</b> (cap 10 total).</div>`:`<div>Choose an ally: it gains <b>+${k.qiGen} Qi</b> of its own element (cap 10 total).</div>`;}
  h+=`<div class="muted">${k.cd?`Cooldown: ${k.cd} turn${k.cd>1?'s':''} after use.`:'No cooldown.'}${u.cdl[i]?` <span class="bad">Ready in ${u.cdl[i]} turn${u.cdl[i]>1?'s':''}.</span>`:''}</div>`;
  const sd=SD(u);if(sd.lastEl&&GEN[sd.lastEl]===u.el)h+=`<div class="gold">Continues your chain: Qi Surge +1 ${EL[u.el].n} next turn.</div>`;
  const w=whyNot(u,i);if(w&&S.phase==='player'&&u.side==='p')h+=`<div class="bad">${w}</div>`;
@@ -854,9 +918,6 @@ function tipCard(u){
  <div><b class="gold">Passive · ${u.passive.name}</b><br>${u.passive.desc}</div>`;
  const sts=['shield','burn','stun','skip','seal','dodge','emp','res'].filter(k=>({shield:u.shield>0,burn:u.burn>0,stun:u.stun,skip:u.skip,seal:u.seal,dodge:u.dodge,emp:u.emp,res:u.resolute>0})[k]);
  h+='<hr>'+(sts.length?sts.map(k=>`<div>• ${STX[k](u)}</div>`).join(''):'<div class="muted">No active effects.</div>');
- if(u.cult&&u.intent&&!u.dead){const k=u.skills[u.intent.i];h+=`<hr><div><b>Next action:</b> ${u.stun?'none (stunned)':k.name}</div>`;
-  if(!u.stun&&k.d){const t=u.intent.t;const ts=t==='all'?alive('p'):Array.isArray(t)?t:[t];h+=ts.filter(x=>x&&x.side==='p'&&!x.dead).map(x=>dmgRow(u,k,x,!isAoe(k)&&k.pick!=='two')).join('');}
-  else if(!u.stun)h+=`<div class="muted">${k.desc}</div>`;}
  
  if(!u.cult&&u.cdl.some(x=>x))h+=`<div class="muted">Cooldowns: ${u.skills.map((k,i)=>u.cdl[i]?`${k.name} ${u.cdl[i]}`:'').filter(Boolean).join(', ')}</div>`;
  return h;
@@ -868,7 +929,7 @@ function tipQi(e){
  return `<h5>${EL[e].n} Qi: ${S.sides.p.qi[e]}</h5><div>Made by: <b>${who.length?who.join(', '):'nobody in this team'}</b> (+1 each at turn start).</div>
  <div>${EL[e].n} beats <b>${EL[OVER[e]].n}</b> (+30%) · feeds <b>${EL[GEN[e]].n}</b> in the Surge chain.</div>${pend?`<div class="gold">+${pend} from Qi Surge next turn.</div>`:''}<div class="muted">Spent on ${who.length?who[0].split(' ')[0]+'\'s':'its'} skills, or as the "any" Qi of a finisher.</div>`;
 }
-const TX={end:'<h5>End Turn</h5><div>Finish your turn. Then every cultist does the action shown in its bubble.</div><div class="muted">Unused Qi is kept (max 10).</div>',
+const TX={end:'<h5>End Turn</h5><div>Finish your turn. Then each cultist picks its move and acts.</div><div class="muted">Unused Qi is kept (max 10).</div>',
  surge:'<h5>Qi Surge</h5><div>Use skills in the order Wood → Fire → Earth → Metal → Water → Wood. Each link = +1 Qi next turn of the element that received the link.</div><div class="muted">Best chain here: Feng (Metal) → Lin (Water) → Xiao Yu (Wood) → Su (Fire).</div>',
  auto:'<h5>AUTO</h5><div>A simple AI plays your turns (for farming cleared stages). It is not optimal: you can beat it.</div>',
  spd:'<h5>2x speed</h5><div>Plays animations twice as fast.</div>',help:'<h5>How to play</h5><div>Rules for Qi, Surge, elements and control.</div>',
@@ -904,30 +965,29 @@ function hideTip(){tip.style.display='none';tip.classList.remove('on');tipEl=nul
 /* ===== aiming arrow ===== */
 const aimG=$('#aimG');let aimEnd=null,aimSrc=null,aimRAF=0;
 function stagePt(e){const r=$('#stage').getBoundingClientRect();return{x:(e.clientX-r.left)/SCALE,y:(e.clientY-r.top)/SCALE};}
-function startAim(u){S.aiming=true;aimSrc=u;const c=center(u);aimEnd={x:c.x+30,y:c.y-150};aimG.style.display='block';drawAim();if(!aimRAF)aimRAF=requestAnimationFrame(aimTick);}
+function startAim(u){S.aiming=true;aimSrc=u;const c=center(u);aimEnd={x:c.x+30,y:c.y-150};aimG.style.display='block';drawAim();}
 function clearAim(){S.aiming=false;aimSrc=null;S.hoverT=null;if(!NOFX)aimG.style.display='none';}
 function aimCurve(){const s=center(aimSrc);const a={x:s.x,y:s.y-60};const e=S.hoverT?center(S.hoverT):aimEnd;const c={x:(a.x+e.x)/2+(e.x-a.x)*.1,y:Math.min(a.y,e.y)-90};return{a,c,e};}
 function drawAim(){
  if(!S.aiming||!aimSrc)return;const{a,c,e}=aimCurve();
- const ally=['ally','allAllies'].includes(aimSrc.skills[S.skill]?.tg);
+ const ally=S.tellAlly||(S.phase==='player'&&['ally','allAllies'].includes(aimSrc.skills[S.skill]?.tg));
  const g=ally?'gAlly':'gAtk';const gr=$('#'+g);gr.setAttribute('x1',a.x);gr.setAttribute('y1',a.y);gr.setAttribute('x2',e.x);gr.setAttribute('y2',e.y);
  const ang=Math.atan2(e.y-c.y,e.x-c.x);const back=24;const ex=e.x-Math.cos(ang)*back,ey=e.y-Math.sin(ang)*back;
  const d=`M${a.x},${a.y} Q${c.x},${c.y} ${ex},${ey}`;
- for(const id of ['aimBase','aimPath'])$('#'+id).setAttribute('d',d),$('#'+id).setAttribute('stroke',`url(#${g})`);
+ for(const id of ['aimHalo','aimBase','aimPath'])$('#'+id).setAttribute('d',d),$('#'+id).setAttribute('stroke',`url(#${g})`);
  $('#aimCore').setAttribute('d',d);
- const hd=$('#aimHead');hd.setAttribute('transform',`translate(${ex},${ey}) rotate(${ang*57.2958})`);hd.setAttribute('fill',ally?'#ffd46b':'#ff3d7f');
- const rg=$('#aimRing');rg.setAttribute('cx',e.x);rg.setAttribute('cy',e.y);rg.style.display=S.hoverT?'block':'none';rg.setAttribute('stroke',ally?'#c9ffe6':'#ffd0e4');
+ const hd=$('#aimHead');hd.setAttribute('transform',`translate(${ex},${ey}) rotate(${ang*57.2958})`);hd.setAttribute('fill',ally?'#22c983':'#ff3d7f');
+ const rg=$('#aimRing');rg.setAttribute('cx',e.x);rg.setAttribute('cy',e.y);rg.style.display=S.hoverT?'block':'none';rg.setAttribute('stroke',ally?'#b9ffdc':'#ffd0e4');
 }
-function aimTick(t){aimRAF=0;if(!S.aiming)return;drawAim();$('#aimPath').setAttribute('stroke-dashoffset',-(t/18)%48);
- const{a,c,e}=aimCurve();const ally=['ally','allAllies'].includes(aimSrc.skills[S.skill]?.tg);
- for(let i=0;i<2;i++){const s=Math.random();const x=(1-s)*(1-s)*a.x+2*(1-s)*s*c.x+s*s*e.x,y=(1-s)*(1-s)*a.y+2*(1-s)*s*c.y+s*s*e.y;parts.push({x,y,vx:(Math.random()-.5)*.6,vy:-Math.random()*.6,g:0,r:1.5+Math.random()*2,c:ally?'#fff2b0':'#ffb3cf',life:.9,dec:.03});}kick();
- aimRAF=requestAnimationFrame(aimTick);}
+function aimStep(t){drawAim();$('#aimPath').setAttribute('stroke-dashoffset',-(t/18)%48);
+ const{a,c,e}=aimCurve();const ally=S.tellAlly||(S.phase==='player'&&['ally','allAllies'].includes(aimSrc.skills[S.skill]?.tg));
+ for(let i=0;i<2&&parts.length<MAXP;i++){const s=Math.random();const x=(1-s)*(1-s)*a.x+2*(1-s)*s*c.x+s*s*e.x,y=(1-s)*(1-s)*a.y+2*(1-s)*s*c.y+s*s*e.y;parts.push({x,y,vx:(Math.random()-.5)*.6,vy:-Math.random()*.6,g:0,r:1.5+Math.random()*2,c:ally?'#b9ffdc':'#ffb3cf',life:.9,dec:.03});}}
 function unitAt(cx_,cy_){const el=document.elementFromPoint(cx_,cy_);const s=el&&el.closest('.slot');return s?byUid(s.dataset.uid):null;}
-function aimHover(e){if(!S.aiming)return;const p=stagePt(e);aimEnd=p;const u=unitAt(e.clientX,e.clientY);const k=aimSrc.skills[S.skill];
+function aimHover(e){if(!S.aiming||S.phase!=='player')return;const p=stagePt(e);aimEnd=p;const u=unitAt(e.clientX,e.clientY);const k=aimSrc.skills[S.skill];
  const v=u&&validTargets(aimSrc,k).includes(u)?u:null;if(v!==S.hoverT){S.hoverT=v;updAll();if(v){const row=aimSrc.card.querySelectorAll('.sk')[S.skill];showTip(row,v.card);}else hideTip();}drawAim();}
 
 /* ===== input ===== */
-function cancelSel(){S.sel=null;S.skill=null;clearAim();hideTip();updAll();renderHint();}
+function cancelSel(){S.sel=null;S.skill=null;clearAim();hideTip();updAll();renderHint();renderTray();}
 function onSkill(u,i){
  if(S.over)return;
  if(S.phase!=='player'||S.busy||AUTO||u.side!=='p')return 'tip';
@@ -945,34 +1005,59 @@ function onCardTap(u){
   cancelSel();return;}
  return 'tip';
 }
+/* ===== touch skill tray (phones/tablets): big 44px+ buttons for the selected disciple ===== */
+const isTouch=()=>lastType==='touch'||lastType==='pen';
+function openTray(u){if(NOFX)return;S.trayU=u;renderTray();updAll();renderHint();}
+function closeTray(){if(!S||!S.trayU)return;S.trayU=null;renderTray();updAll();}
+function renderTray(){if(NOFX)return;const tr=$('#tray');const u=S&&S.trayU;
+ if(!u||u.dead||S.phase!=='player'||AUTO||S.over){tr.classList.remove('show');$('#stage').classList.remove('trayOpen');if(u&&(u.dead||S.over||S.phase!=='player'))S.trayU=null;return;}
+ const bh=Math.min(78,Math.max(50,Math.ceil(44.5/SCALE)));tr.style.setProperty('--bh',bh+'px');
+ tr.innerHTML=`<div class="trh">${u.name}</div>`+u.skills.map((k,i)=>{const co=cost(k);const c=Array(co.own).fill(dotH(u.el)).join('')+(co.any?'<span class="dot any"></span>':'');
+  const ok=canUse(u,i);const v=u.cdl[i]>0?`<span class="cd">CD ${u.cdl[i]}</span>`:skillVal(u,k);
+  return `<div class="tb ${ok?'ok':'no'} ${S.sel===u&&S.skill===i?'pick':''}" data-tip="skill" data-uid="${u.uid}" data-i="${i}"><span class="cost">${c}</span><span class="tn">${k.name}</span><span class="tv">${v}</span></div>`;}).join('');
+ tr.classList.add('show');$('#stage').classList.add('trayOpen');}
+function fingerAnchor(x,y){return{getBoundingClientRect:()=>({left:x-22,right:x+22,top:y-52,bottom:y+22,width:44,height:74})};}
+const LP_MS=380;
 let down=null,lpT=0,lpFired=false,suppress=false,lastType='mouse';
-document.addEventListener('pointerdown',e=>{lastType=e.pointerType;down={x:e.clientX,y:e.clientY,t:e.target};lpFired=false;clearTimeout(lpT);
- if(e.pointerType!=='mouse'){hideTip();const el=e.target.closest('[data-tip]');if(el)lpT=setTimeout(()=>{lpFired=true;showTip(el);},430);}
- if(S&&S.aiming)aimHover(e);
+document.addEventListener('pointerdown',e=>{lastType=e.pointerType||'mouse';down={x:e.clientX,y:e.clientY,t:e.target,drag:false};lpFired=false;clearTimeout(lpT);
+ if(e.pointerType!=='mouse'){hideTip();const el=e.target.closest('[data-tip]');
+  if(el)lpT=setTimeout(()=>{if(!down)return;lpFired=true;showTip(el,fingerAnchor(down.x,down.y));},LP_MS);}
+ if(S&&S.aiming)aimQ=e;
 },{passive:true});
 document.addEventListener('pointermove',e=>{
- if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>10)clearTimeout(lpT);
- if(S&&S.aiming){aimHover(e);return;}
+ if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>10){clearTimeout(lpT);
+  // dragging out of a usable single-target skill starts aiming straight away
+  if(!lpFired&&!down.drag&&S&&!S.aiming&&S.phase==='player'&&!S.busy&&!AUTO){const sk=down.t.closest&&down.t.closest('.sk,.tb');
+   if(sk){const u=byUid(sk.dataset.uid),i=+sk.dataset.i;if(u&&u.side==='p'&&canUse(u,i)&&!isAoe(u.skills[i])){down.drag=true;S.sel=u;S.skill=i;S.hoverT=null;hideTip();startAim(u);updAll();renderHint();renderTray();}}}}
+ if(lpFired&&e.pointerType!=='mouse')return;
+ if(S&&S.aiming){aimQ=e;return;} // PERF: aim hover is coalesced into the single rAF loop
  if(e.pointerType==='mouse'){const el=e.target.closest('[data-tip]');if(el!==tipEl){if(el)showTip(el);else hideTip();}}
 },{passive:true});
-document.addEventListener('pointerup',e=>{clearTimeout(lpT);
- if(lpFired){suppress=true;setTimeout(()=>suppress=false,400);if(e.pointerType!=='mouse')setTimeout(hideTip,2200);}
- else if(S&&S.aiming&&down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>18){const u=unitAt(e.clientX,e.clientY);const k=S.sel.skills[S.skill];
-  if(u&&validTargets(S.sel,k).includes(u)){suppress=true;setTimeout(()=>suppress=false,400);useSkill(S.sel,S.skill,u);}}
- down=null;},{passive:true});
+function endPress(e,cancel){clearTimeout(lpT);
+ if(lpFired){suppress=true;setTimeout(()=>suppress=false,450);if(e.pointerType!=='mouse')hideTip();}
+ else if(!cancel&&S&&S.aiming&&down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>18){const u=unitAt(e.clientX,e.clientY);const k=S.sel.skills[S.skill];
+  if(u&&validTargets(S.sel,k).includes(u)){suppress=true;setTimeout(()=>suppress=false,400);useSkill(S.sel,S.skill,u);}else if(down.drag){suppress=true;setTimeout(()=>suppress=false,400);}}
+ lpFired=cancel?false:lpFired;down=null;}
+document.addEventListener('pointerup',e=>endPress(e,false),{passive:true});
+document.addEventListener('pointercancel',e=>{if(lpFired&&e.pointerType!=='mouse')hideTip();endPress(e,true);},{passive:true});
 document.addEventListener('click',e=>{
  if(suppress){e.stopPropagation();e.preventDefault();suppress=false;return;}
  if(!S)return;
  const ov=e.target.closest('.ov');if(ov)return;
- const sk=e.target.closest('.sk'),card=e.target.closest('.card'),btn=e.target.closest('#endBtn,#autoBtn,#spdBtn,#helpBtn');
+ const tb=e.target.closest('.tb'),sk=e.target.closest('.sk'),card=e.target.closest('.card'),btn=e.target.closest('#endBtn,#autoBtn,#spdBtn,#helpBtn');
  if(btn)return;
+ if(tb){const u=byUid(tb.dataset.uid),i=+tb.dataset.i;if(onSkill(u,i)==='tip')showTip(tb,tb);renderTray();return;}
+ const tapped=sk?byUid(sk.dataset.uid):card?byUid(card.dataset.uid):null;
+ if(tapped&&S.sel&&S.skill!=null&&validTargets(S.sel,S.sel.skills[S.skill]).includes(tapped)&&!(sk&&S.sel===tapped&&+sk.dataset.i===S.skill)){onCardTap(tapped);return;}
+ if(tapped&&isTouch()&&tapped.side==='p'&&!tapped.dead&&S.phase==='player'&&!S.busy&&!AUTO){S.sel=null;S.skill=null;clearAim();hideTip();openTray(tapped);return;}
  if(sk){const u=byUid(sk.dataset.uid);const i=+sk.dataset.i;
-  if(S.sel&&S.skill!=null&&!(S.sel===u)&&validTargets(S.sel,S.sel.skills[S.skill]).includes(u)){onCardTap(u);return;}
   if(onSkill(u,i)==='tip'&&lastType!=='mouse')showTip(sk);return;}
  if(card){const u=byUid(card.dataset.uid);if(onCardTap(u)==='tip'&&lastType!=='mouse')showTip(card);return;}
- if(S.skill!=null)cancelSel();else if(lastType!=='mouse')hideTip();
+ if(e.target.closest('#tray'))return;
+ if(S.skill!=null)cancelSel();else if(S.trayU)closeTray();else if(lastType!=='mouse')hideTip();
 },true);
-document.addEventListener('contextmenu',e=>{e.preventDefault();if(S&&S.skill!=null&&!lpFired)cancelSel();});
+document.addEventListener('contextmenu',e=>{e.preventDefault();if(lastType==='mouse'&&S&&S.skill!=null&&!lpFired)cancelSel();});
+document.addEventListener('selectstart',e=>e.preventDefault());
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S&&S.skill!=null)cancelSel();});
 
 /* ===== end ===== */
@@ -990,7 +1075,7 @@ function showEnd(win,draw){
 /* ===== boot ===== */
 let SCALE=1;
 function fit(){const s=Math.min(innerWidth/W,innerHeight/H);SCALE=s;$('#stage').style.transform=`translate(${(innerWidth-W*s)/2}px,${(innerHeight-H*s)/2}px) scale(${s})`;fitCanvas();}
-addEventListener('resize',()=>{fit();hideTip();});
+let lastWH=[innerWidth,innerHeight];addEventListener('resize',()=>{fit();if(S)renderTray();const big=Math.abs(innerWidth-lastWH[0])>2||Math.abs(innerHeight-lastWH[1])>120;lastWH=[innerWidth,innerHeight];if(big)hideTip();});
 function start(){
  $('#endOv').classList.remove('show');$('#fxl').innerHTML='';parts=[];strokes=[];hideTip();
  S=newState();buildCards();renderQi();renderSurge();renderHint();log('The Shadow Moon Cult attacks the ruins of the Azure Lotus Sect!');
@@ -998,7 +1083,7 @@ function start(){
 }
 $('#endBtn').onclick=()=>{if(!S.over)endTurn();};
 $('#replayBtn').onclick=()=>start();
-$('#autoBtn').onclick=()=>{AUTO=!AUTO;$('#autoBtn').classList.toggle('on',AUTO);if(S){cancelSel();if(AUTO&&S.phase==='player'&&!S.busy)autoPlay('p');renderHint();}};
+$('#autoBtn').onclick=()=>{AUTO=!AUTO;$('#autoBtn').classList.toggle('on',AUTO);if(S){S.trayU=null;cancelSel();if(AUTO&&S.phase==='player'&&!S.busy)autoPlay('p');renderHint();}};
 $('#spdBtn').onclick=()=>{SPEED=SPEED===1?2:1;$('#spdBtn').classList.toggle('on',SPEED===2);$('#spdBtn').textContent=SPEED===2?'2x ON':'2x';};
 $('#helpBtn').onclick=()=>$('#helpOv').classList.add('show');
 $('#helpClose').onclick=()=>{$('#helpOv').classList.remove('show');if(!S)start();};
@@ -1006,16 +1091,19 @@ $('#cycGen').innerHTML=['wood','fire','earth','metal','water','wood'].map(e=>jew
 $('#cycOver').innerHTML=['water','fire','metal','wood','earth','water'].map(e=>jewel(e)).join('<span>&#10140;</span>');
 $('#autoBtn').classList.toggle('on',AUTO);
 setInterval(()=>{if(S&&!S.over){const s=Math.floor((performance.now()-S.t0)/1000);$('#clockT').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}},1000);
-fit();if(!NOFX)requestAnimationFrame(petalLoop);
+fit();if(!NOFX)requestAnimationFrame(frame);
 if(Q.get('nohelp'))start();else $('#helpOv').classList.add('show');
 /* ===== per-skill VFX (procedural canvas sprites, additive blending) ===== */
-const MAXP=700;
+const MAXP=450; /* PERF: particle cap (was 700) */
 function addP(p){if(parts.length<MAXP)parts.push(p);}
 function fxRun2(ms,draw,add=false){if(NOFX)return Promise.resolve();return new Promise(res=>{const D=dur(ms);const t0=performance.now();setTimeout(res,D+40);strokes.push({t:0,sp:0,draw:s=>{const t=Math.min(1,(performance.now()-t0)/D);cx.save();if(add)cx.globalCompositeOperation='lighter';try{draw(t);}finally{cx.restore();}if(t>=1){s.t=1;res();}}});kick();});}
 const ease=t=>1-Math.pow(1-t,3), easeIn=t=>t*t, lerp=(a,b,t)=>a+(b-a)*t;
 const qb=(a,c,b,t)=>({x:(1-t)*(1-t)*a.x+2*(1-t)*t*c.x+t*t*b.x,y:(1-t)*(1-t)*a.y+2*(1-t)*t*c.y+t*t*b.y});
-function flash(col,a=.35,ms=260){if(NOFX)return;const d=document.createElement('div');d.style.cssText=`position:absolute;inset:0;background:${col};pointer-events:none;mix-blend-mode:screen`;$('#fxl').appendChild(d);d.animate([{opacity:a},{opacity:0}],{duration:dur(ms)}).onfinish=()=>d.remove();}
-function dim(col,a=.35,ms=900){if(NOFX)return;const d=document.createElement('div');d.style.cssText=`position:absolute;inset:0;background:${col};pointer-events:none`;$('#fxl').prepend(d);d.animate([{opacity:0},{opacity:a,offset:.25},{opacity:a,offset:.7},{opacity:0}],{duration:dur(ms)}).onfinish=()=>d.remove();}
+/* PERF: full-screen flash/dim layers are pooled, opacity-only, and no longer use mix-blend-mode (a full-screen blend per frame) */
+const ovPool=[];function ovLayer(col){const d=ovPool.pop()||document.createElement('div');d.style.cssText=`position:absolute;inset:0;background:${col};pointer-events:none;opacity:0;will-change:opacity`;return d;}
+function ovDone(d){d.remove();if(ovPool.length<6)ovPool.push(d);}
+function flash(col,a=.35,ms=260){if(NOFX)return;const d=ovLayer(col);$('#fxl').appendChild(d);d.animate([{opacity:a*.75},{opacity:0}],{duration:dur(ms)}).onfinish=()=>ovDone(d);}
+function dim(col,a=.35,ms=900){if(NOFX)return;const d=ovLayer(col);$('#fxl').prepend(d);d.animate([{opacity:0},{opacity:a,offset:.25},{opacity:a,offset:.7},{opacity:0}],{duration:dur(ms)}).onfinish=()=>ovDone(d);}
 function quake(px=7,ms=320){if(NOFX)return;for(const el of [$('#cards'),$('#bgfx')])el.animate([{transform:'translate(0,0)'},{transform:`translate(${px}px,${-px*.6}px)`},{transform:`translate(${-px}px,${px*.5}px)`},{transform:`translate(${px*.5}px,${px*.4}px)`},{transform:'translate(0,0)'}],{duration:dur(ms)});}
 function topOf(u){const p=POS(u);return{x:p.x+CW/2,y:p.y+20};}
 /* shapes */
@@ -1036,7 +1124,7 @@ function sigil(x,y,r,rot,col,a){cx.save();cx.translate(x,y);cx.rotate(rot);cx.gl
 function sparks(x,y,col,n=14,sp=3,g=.05){for(let i=0;i<n;i++){const a=Math.random()*6.283,v=(.4+Math.random())*sp;addP({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g,r:1.5+Math.random()*2.5,c:col,life:1,dec:.025+Math.random()*.02});}kick();}
 function trailDot(p,col,r=3){addP({x:p.x,y:p.y,vx:(Math.random()-.5)*.5,vy:(Math.random()-.5)*.5,g:0,r:r+Math.random()*2,c:col,life:.8,dec:.045});}
 async function travel(a,b,ms,arc,drawHead,trailCol){const c={x:(a.x+b.x)/2,y:Math.min(a.y,b.y)-arc};await fxRun2(ms,t=>{const e=easeIn(t)*.4+t*.6;const p=qb(a,c,b,e);const p2=qb(a,c,b,Math.max(0,e-.04));drawHead(p,Math.atan2(p.y-p2.y,p.x-p2.x),t);if(trailCol)trailDot(p,trailCol);});}
-function cardPulse(u,col,ms=600){if(NOFX)return;u.card.animate([{filter:'brightness(1)'},{filter:`brightness(1.4) drop-shadow(0 0 16px ${col})`},{filter:'brightness(1)'}],{duration:dur(ms)});}
+function cardPulse(u,col,ms=600){cardGlow(u,col,ms,1);}
 async function dash(u,t,big,trailCol){const a=center(u),b=center(t);const dx=(b.x-a.x)*.42,dy=(b.y-a.y)*.42;u.slot.style.zIndex=30;
  u.card.animate([{transform:'translate(0,0)'},{transform:`translate(${-dx*.1}px,${-dy*.1}px) scale(1.04)`,offset:.3},{transform:`translate(${dx}px,${dy}px) scale(${big?1.12:1.06}) rotate(${dx>0?4:-4}deg)`,offset:.58},{transform:'translate(0,0)'}],{duration:dur(big?700:540),easing:'ease-in-out'});
  if(trailCol)fxRun2(big?420:330,tt=>{const p={x:a.x+dx*easeIn(Math.min(1,tt*1.4)),y:a.y+dy*easeIn(Math.min(1,tt*1.4))};for(let i=0;i<3;i++)trailDot({x:p.x+(Math.random()-.5)*60,y:p.y+(Math.random()-.5)*90},trailCol,2);});
@@ -1087,7 +1175,8 @@ const VFX={
   fxRun2(1000,tt=>{talisman(b.x,b.y-10,.15,34,1-Math.max(0,tt-.6)/.4);glyph(b.x,b.y-10,lerp(25,70,ease(tt)),tt*2,'#4dffa0',1-tt);});await sleep(150);},
  'Spirit Font':async(u,ts,k)=>{const a=center(u);cardPulse(u,'#ffe27a',900);
   await fxRun2(600,tt=>{glyph(a.x,a.y+60,lerp(20,70,ease(tt)),tt*2,'#8cf0b4',Math.min(1,tt*2));for(let i=0;i<3;i++)addP({x:a.x+(Math.random()-.5)*80,y:a.y+60,vx:0,vy:-2-Math.random()*2,g:0,r:2+Math.random()*2,c:'#c8ffd8',life:1,dec:.03});});
-  const others=allies(u).filter(x=>x!==u).sort((x,y)=>SD(u).qi[x.el]-SD(u).qi[y.el]).slice(0,k.qiGen);
+  const others=ts.filter(x=>!x.dead);
+  for(const o of others){const b=center(o);await travel(a,b,520,140,(p)=>{cx.fillStyle='#eafff2';cx.shadowColor='#3ddc97';cx.shadowBlur=22;cx.beginPath();cx.arc(p.x,p.y,8,0,7);cx.fill();},'#8cf0b4');cardPulse(o,EL[o.el].c2,700);}
   const sr=$('#stage').getBoundingClientRect();
   await Promise.all(others.map((o,i)=>{const r=$('#qi-'+o.el).getBoundingClientRect();const b={x:(r.left+20-sr.left)/SCALE,y:(r.top+19-sr.top)/SCALE};const col=EL[o.el].c2;
    return travel(a,b,650+i*120,160,(p)=>{cx.globalAlpha=1;const g=cx.createRadialGradient(p.x,p.y,0,p.x,p.y,14);g.addColorStop(0,'#fff');g.addColorStop(1,col);cx.fillStyle=g;cx.shadowColor=col;cx.shadowBlur=20;cx.beginPath();cx.arc(p.x,p.y,9,0,7);cx.fill();},col);}));},
