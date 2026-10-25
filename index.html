@@ -45,21 +45,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 .phone .qi.total{justify-content:center;padding:0}.phone .qi.total .qn{display:none}.phone .qi.total .qv{font-size:12.5px}
 /* ===== Qi Surge chip (collapsible) ===== */
 #surge{position:absolute;z-index:20;border-radius:14px;padding:6px 10px;color:#7a4aa8;cursor:pointer}
-#surge .t{font-size:10.5px;font-weight:1000;letter-spacing:1.2px;white-space:nowrap}
+#surge .t{font-size:10.5px;font-weight:1000;letter-spacing:1.2px;white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px;line-height:18px}
 #surge .chev{color:#b08ad0;display:inline-block;transition:transform .2s}#surge.open .chev{transform:rotate(180deg)}
-#surge .r{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:2px}
-#chain{display:flex;align-items:center;gap:3px;min-height:20px;flex-wrap:nowrap;overflow:hidden}
-#chain .jewel{position:relative;width:18px;height:18px;flex:none;box-shadow:0 0 0 1.5px #fff}
+#surge .r{display:flex;align-items:center;gap:6px;margin-top:1px;min-width:0}
+/* chain icons: the generic .jewel is absolutely positioned at top/left var(--pd) for cards; here it must be in-flow with no offset,
+   and the row is tall enough (incl. the 1.5px white ring) so nothing is clipped at any size */
+#chain{display:flex;align-items:center;gap:3px;height:24px;padding:0 2px;flex-wrap:nowrap;overflow:hidden;line-height:1;min-width:0}
+#chain .jewel{position:relative;left:auto;top:auto;width:18px;height:18px;flex:none;box-shadow:0 0 0 1.5px #fff;margin:0}
 #chain .jewel svg{width:11px;height:11px}#chain .jewel::after{display:none}
 #chain .arr{font-size:11px;font-weight:900;color:#d0a640}#chain .arr.bad{color:#b4bad0}
 #chain .none{font-size:11px;font-weight:800;color:#9aa0c0;white-space:nowrap}
-#surge b{background:linear-gradient(90deg,#ffe7a0,#c9ffe6);border-radius:8px;padding:0 6px;color:#5a3a10;font-size:13px;font-weight:1000;flex:none}
+#surge b{background:linear-gradient(90deg,#ffe7a0,#c9ffe6);border-radius:8px;padding:0 6px;color:#5a3a10;font-size:12px;line-height:17px;letter-spacing:0;font-weight:1000;flex:none}
 #surge .sdm{margin-top:3px;height:16px;line-height:14px;font-size:11px;font-weight:1000;color:#9a4a0c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#surge .sdm:not(.on){color:#b08a50;padding:1px 0}#surge .sdm.on{color:#fff;background:linear-gradient(90deg,#ff9a5a,#ff5fa0);border-radius:8px;padding:1px 6px}
-.phone #surge .sdm{font-size:9.5px}
+.phone #surge .sdm{font-size:9.5px;margin-top:2px}
 #surge .more{display:none;margin-top:4px}#surge.open .more{display:block}
 .schip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:900;border-radius:10px;padding:2px 8px;margin:2px 2px 0 0;background:rgba(255,255,255,.85);border:1px solid #e4e8f6;color:#4d5680}
 .schip.b{background:linear-gradient(90deg,#fff1c2,#ffd9ec);border-color:#f3c96e;color:#9a4a0c}
-.phone #surge{padding:4px 8px}.phone #surge .t{font-size:9px}.phone #chain .jewel{width:15px;height:15px}.phone #chain .jewel svg{width:9px;height:9px}.phone #surge b{font-size:11.5px}
+.phone #surge{padding:4px 8px}.phone #surge .t{font-size:9px;line-height:15px}.phone #chain{height:20px}.phone #chain .jewel{width:15px;height:15px}.phone #chain .jewel svg{width:9px;height:9px}.phone #surge b{font-size:10.5px;line-height:15px}
 #rivalQi{position:absolute;right:14px;top:70px;z-index:20;border-radius:12px;padding:4px 10px;font-size:11px;font-weight:900;color:#6a3aa0;display:none}
 /* ===== cards ===== */
 #cards{position:absolute;left:0;top:0;width:0;height:0;z-index:5;will-change:transform}
@@ -240,7 +242,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#cfe6ff;font-family:
 .box p,.box li{font-size:12px;line-height:1.42;color:#3d4670;font-weight:600}
 .box ul{padding-left:15px}
 .cyc{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:3px 0}
-.cyc .jewel{position:static;width:22px;height:22px}.cyc .jewel svg{width:12px;height:12px}.cyc .jewel::after{width:8px;height:5px;left:4px;top:2px}
+.cyc .jewel{position:static;left:auto;top:auto;width:22px;height:22px}.cyc .jewel svg{width:12px;height:12px}.cyc .jewel::after{width:8px;height:5px;left:4px;top:2px}
 .cyc span{font-size:12px;font-weight:900;color:#a8457a}
 .btn{display:inline-block;margin-top:10px;padding:9px 36px;border-radius:24px;font-family:"Cinzel",serif;font-weight:900;font-size:16px;letter-spacing:2px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#ff9ac8,#8fb8ff);box-shadow:0 4px 14px rgba(120,120,220,.45);border:2px solid #fff}
 #endBox{text-align:center;width:min(540px,92vw)}
@@ -913,7 +915,7 @@ function renderSurge(){
  const pend=Object.entries(sd.pending).filter(([,v])=>v>0);const tot=pend.reduce((a,[,v])=>a+v,0);
  const nx=sd.lastEl?GEN[sd.lastEl]:null;
  if(!ch)ch='<span class="none">no chain yet</span>';
- $('#surge').innerHTML=`<div class="t">&#10022; QI SURGE <span class="chev">&#9662;</span></div><div class="r"><span id="chain">${ch}</span><b>+${tot} Qi</b></div>`+`<div class="sdm${sd.surgeDmg>0?' on':''}">${sd.surgeDmg>0?`&#9876; +${sd.surgeDmg}% 1st attack now`:''}${sd.surgeDmg>0&&sd.surgeLinks>0?' · ':''}${sd.surgeLinks>0?`+${Math.min(4,sd.surgeLinks)*SURGE_PCT}% next attack`:''}${!sd.surgeDmg&&!sd.surgeLinks?'+0% next attack':''}</div>`+
+ $('#surge').innerHTML=`<div class="t"><span>&#10022; QI SURGE <span class="chev">&#9662;</span></span><b>+${tot} Qi</b></div><div class="r"><span id="chain">${ch}</span></div>`+`<div class="sdm${sd.surgeDmg>0?' on':''}">${sd.surgeDmg>0?`&#9876; +${sd.surgeDmg}% 1st attack now`:''}${sd.surgeDmg>0&&sd.surgeLinks>0?' · ':''}${sd.surgeLinks>0?`+${Math.min(4,sd.surgeLinks)*SURGE_PCT}% next attack`:''}${!sd.surgeDmg&&!sd.surgeLinks?'+0% next attack':''}</div>`+
   `<div class="more">${nx?`<span class="schip">Next link: ${dotH(nx)} ${EL[nx].n}${nx==='earth'?' (none in team)':''}</span>`:'<span class="schip">Start: any skill</span>'}${pend.map(([e,v])=>`<span class="schip b">${dotH(e)} +${v} ${EL[e].n}</span>`).join('')}</div>`;
 }
 /* hint: only while choosing a target (with a big Cancel). Everything else goes to the tray message line. */
